@@ -42,9 +42,26 @@ npm install --omit=dev
 # —— Runtime dirs ——
 mkdir -p auth tmp logs uploads
 
+# —— Storage / vault name ——
+echo ""
+DEFAULT_NAME="${VAULT_NAME:-WattSapDrive}"
+if [ -t 0 ] && [ -z "${VAULT_NAME:-}" ]; then
+  printf "📛 Назва сховища [%s]: " "$DEFAULT_NAME"
+  read -r INPUT_NAME || true
+  VAULT_NAME="${INPUT_NAME:-$DEFAULT_NAME}"
+else
+  VAULT_NAME="$DEFAULT_NAME"
+fi
+# sanitize
+VAULT_NAME="$(printf '%s' "$VAULT_NAME" | tr -d '\r' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//' | cut -c1-60)"
+[ -n "$VAULT_NAME" ] || VAULT_NAME="WattSapDrive"
+green "Vault name: ${VAULT_NAME}"
+
 # —— app-config.json (token) ——
 if [ ! -f app-config.json ]; then
   TOKEN="$(node -e "console.log(require('crypto').randomBytes(8).toString('hex'))")"
+  # escape JSON string
+  NAME_JSON="$(node -e "console.log(JSON.stringify(process.argv[1]))" "$VAULT_NAME")"
   cat > app-config.json <<EOF
 {
   "version": "${VERSION}",
@@ -53,6 +70,7 @@ if [ ! -f app-config.json ]; then
     "enabled": true
   },
   "drive": {
+    "name": ${NAME_JSON},
     "defaultFolder": "",
     "maxFileSize": "2gb",
     "provider": "whatsapp"
@@ -66,6 +84,14 @@ EOF
   green "Created app-config.json · token ${TOKEN}"
 else
   TOKEN="$(node -e "try{console.log(require('./app-config.json').auth.token||'')}catch{console.log('')}")"
+  node -e "
+    const fs=require('fs');
+    const p='app-config.json';
+    const c=JSON.parse(fs.readFileSync(p,'utf8'));
+    c.drive=c.drive||{};
+    if(!c.drive.name) c.drive.name=process.argv[1];
+    fs.writeFileSync(p, JSON.stringify(c,null,2));
+  " "$VAULT_NAME"
   yellow "app-config.json already exists · token ${TOKEN:-(see file)}"
 fi
 
@@ -145,14 +171,15 @@ fi
 echo ""
 green "✅ WattSapDrive ready"
 echo "=================================="
+info "Vault:  ${VAULT_NAME}"
 info "UI:     http://${HOST}:${PORT}"
 info "Pair:   http://${HOST}:${PORT}/pair   ← Termux / телефон (код, не QR)"
 info "QR:     http://${HOST}:${PORT}/qr"
 info "Token:  ${TOKEN}"
 echo ""
 info "Next:"
-info "  1) on phone: open /pair → get code → WhatsApp → Link with phone number"
-info "  2) open UI — profile / speeds / Yazi disk should match"
+info "  1) /pair → код у WhatsApp (Link with phone number)"
+info "  2) у UI обери або створи групу-сховище (інакше файли підуть у «Обране»)"
 info "  3) keep WhatsApp Desktop closed on this machine (avoids 440)"
 echo ""
 info "Useful:"

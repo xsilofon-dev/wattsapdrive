@@ -220,14 +220,28 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 </style>
 </head>
 <body>
-<h1><span class="logo">☁</span><span class="word">WattSapDrive</span> <span id="badge" class="status off">offline</span></h1>
-<p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/qr" target="_blank">привʼязка з телефону / QR</a></p>
+<h1><span class="logo">☁</span><span class="word" id="vaultTitle">WattSapDrive</span> <span id="badge" class="status off">offline</span></h1>
+<p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/pair" target="_blank">привʼязка з телефону / QR</a></p>
 <div id="pairBanner" class="card" style="display:none;border-color:#2f6f4a">
   <b>WhatsApp не привʼязаний</b>
   <p class="hint" style="margin-top:6px">Активуй із телефону: WhatsApp → Повʼязані пристрої → Привʼязати за номером.</p>
   <div class="actions" style="justify-content:flex-start;margin-top:10px">
-    <a class="btn" href="/qr" target="_blank">Отримати код</a>
+    <a class="btn" href="/pair" target="_blank">Отримати код</a>
   </div>
+</div>
+<div id="groupBanner" class="card" style="display:none;border-color:#e3b34155">
+  <b>Обери групу-сховище</b>
+  <p class="hint" style="margin-top:6px">Зараз файли не мають групи — їх не видно в чатах. Створи нову або обери існуючу.</p>
+  <div class="field" style="margin-top:10px">
+    <label>Твої групи WhatsApp</label>
+    <select id="groupSelect"><option value="">завантаження…</option></select>
+  </div>
+  <div class="actions" style="justify-content:flex-start;margin-top:10px;flex-wrap:wrap">
+    <button type="button" class="btn" id="btnGroupUse">Використати обрану</button>
+    <button type="button" class="btn secondary" id="btnGroupCreate">Створити «<span id="groupCreateName">Vault</span>»</button>
+    <button type="button" class="btn secondary" id="btnGroupRefresh">Оновити список</button>
+  </div>
+  <p class="hint" id="groupMsg" style="margin-top:8px"></p>
 </div>
 
 <div class="card net-widget" id="netWidget">
@@ -1613,9 +1627,85 @@ async function refreshStatus() {
     badge.className='status '+(on?'on':'off')
     const pairBanner = document.getElementById('pairBanner')
     if (pairBanner) pairBanner.style.display = (s.pair && s.pair.needsLink) ? '' : 'none'
+    const vaultTitle = document.getElementById('vaultTitle')
+    if (vaultTitle && s.vault?.name) vaultTitle.textContent = s.vault.name
+    document.title = (s.vault?.name || 'WattSapDrive')
+    const gName = document.getElementById('groupCreateName')
+    if (gName) gName.textContent = s.vault?.name || 'Vault'
+    const groupBanner = document.getElementById('groupBanner')
+    const needGroup = !!(on && s.group && s.group.needsGroup)
+    if (groupBanner) {
+      groupBanner.style.display = needGroup ? '' : 'none'
+      if (needGroup) loadGroupsIntoSelect()
+    }
     fillNetWidget(s)
   } catch { badge.textContent='down'; badge.className='status off' }
 }
+
+async function loadGroupsIntoSelect() {
+  const sel = document.getElementById('groupSelect')
+  const groupMsg = document.getElementById('groupMsg')
+  if (!sel) return
+  try {
+    const r = await api('/api/groups')
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || r.status)
+    sel.innerHTML = ''
+    if (!j.groups?.length) {
+      sel.innerHTML = '<option value="">(немає груп — створи нову)</option>'
+    } else {
+      for (const g of j.groups) {
+        const o = document.createElement('option')
+        o.value = g.id
+        o.textContent = g.name + (g.selected ? ' ✓' : '')
+        if (g.selected) o.selected = true
+        sel.appendChild(o)
+      }
+    }
+    if (groupMsg) groupMsg.textContent = j.groups?.length ? `Знайдено груп: ${j.groups.length}` : 'Створи групу-сховище кнопкою нижче'
+  } catch (e) {
+    sel.innerHTML = '<option value="">помилка завантаження</option>'
+    if (groupMsg) groupMsg.textContent = String(e.message || e)
+  }
+}
+
+document.getElementById('btnGroupRefresh')?.addEventListener('click', loadGroupsIntoSelect)
+document.getElementById('btnGroupUse')?.addEventListener('click', async () => {
+  const sel = document.getElementById('groupSelect')
+  const groupMsg = document.getElementById('groupMsg')
+  const id = sel?.value
+  if (!id) { if (groupMsg) groupMsg.textContent = 'Обери групу зі списку'; return }
+  try {
+    const r = await api('/api/groups/select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || r.status)
+    if (groupMsg) groupMsg.textContent = 'Обрано: ' + (j.group?.name || id)
+    await refreshStatus()
+  } catch (e) {
+    if (groupMsg) groupMsg.textContent = String(e.message || e)
+  }
+})
+document.getElementById('btnGroupCreate')?.addEventListener('click', async () => {
+  const groupMsg = document.getElementById('groupMsg')
+  const name = document.getElementById('vaultTitle')?.textContent || 'WattSapDrive'
+  try {
+    const r = await api('/api/groups/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error((j.error || r.status) + (j.hint ? ' · ' + j.hint : ''))
+    if (groupMsg) groupMsg.textContent = 'Створено: ' + (j.group?.name || name)
+    await refreshStatus()
+  } catch (e) {
+    if (groupMsg) groupMsg.textContent = String(e.message || e)
+  }
+})
 
 function fillNetWidget(s) {
   const me = s.me || {}
@@ -1625,7 +1715,8 @@ function fillNetWidget(s) {
   netName.textContent = me.name || ''
   const gName = group.name || ''
   const gId = group.id || s.g || ''
-  netGroup.textContent = gName ? ('група: ' + gName) : (gId ? ('група: ' + gId) : 'група: —')
+  if (group.needsGroup) netGroup.textContent = 'група: не обрано — обери сховище вище'
+  else netGroup.textContent = gName ? ('група: ' + gName) : (gId ? ('група: ' + gId) : 'група: —')
   netIp.textContent = net.publicIp || '—'
   if (!liveWaUp) {
     paintSpeed(netWaUp, netWaUpUnit, netWaUpBar, netWaUpTier, netWaUpHint, net.waUp, 'очікую заливку', 2e6)

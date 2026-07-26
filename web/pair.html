@@ -134,7 +134,11 @@ async function refresh(){
     if (s.connected){
       st.textContent = 'online · привʼязано'
       st.className = 'badge on'
-      msg.innerHTML = 'Готово. <a href="/" style="color:#25D366">Відкрити диск →</a>'
+      if (s.group && s.group.needsGroup) {
+        msg.innerHTML = 'WhatsApp ok, але <b>група-сховище не обрана</b>. <a href="/" style="color:#25D366">Відкрий диск →</a> і створи/обери групу.'
+      } else {
+        msg.innerHTML = 'Готово' + (s.group?.name ? (' · група «' + s.group.name + '»') : '') + '. <a href="/" style="color:#25D366">Відкрити диск →</a>'
+      }
       codeWrap.hidden = true
       btnCopy.hidden = true
       document.getElementById('qrBox').textContent = 'вже linked'

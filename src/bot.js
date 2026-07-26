@@ -152,7 +152,12 @@ function ensureAppConfig() {
   const cfg = {
     version: '0.3.0',
     auth: { token, enabled: true },
-    drive: { defaultFolder: '', maxFileSize: '2gb', provider: 'whatsapp' },
+    drive: {
+      name: 'WattSapDrive',
+      defaultFolder: '',
+      maxFileSize: '2gb',
+      provider: 'whatsapp'
+    },
     whatsapp: { group: '', phone: '' }
   }
   fs.writeFileSync(APP_CFG, JSON.stringify(cfg, null, 2))
@@ -160,12 +165,43 @@ function ensureAppConfig() {
   return cfg
 }
 
+function vaultName() {
+  const n = String(readAppConfig()?.drive?.name || '').trim()
+  return n || 'WattSapDrive'
+}
+
+function loadGid() {
+  try {
+    if (fs.existsSync(GROUP)) {
+      const g = String(fs.readFileSync(GROUP, 'utf8') || '').trim()
+      if (g.endsWith('@g.us')) return g
+    }
+  } catch {}
+  const g = String(readAppConfig()?.whatsapp?.group || '').trim()
+  return g.endsWith('@g.us') ? g : null
+}
+
+function saveGid(id) {
+  const g = String(id || '').trim()
+  if (!g.endsWith('@g.us')) throw new Error('invalid group id')
+  fs.writeFileSync(GROUP, g + '\n')
+  try {
+    const cur = readAppConfig()
+    cur.whatsapp = { ...(cur.whatsapp || {}), group: g }
+    writeAppConfig(cur)
+  } catch {}
+  gid = g
+  profileCache.groupId = g
+  profileCache.groupAt = 0
+  return g
+}
+
 function isCatalogShape(d) {
   return d && typeof d === 'object' && d.files && typeof d.files === 'object' && d.folders && typeof d.folders === 'object'
 }
 
 let sock = null
-let gid = fs.existsSync(GROUP) ? fs.readFileSync(GROUP, 'utf8').trim() : null
+let gid = loadGid()
 let qrString = ''
 let pairingCode = ''
 let pairingPhone = ''
@@ -637,7 +673,11 @@ app.get('/api/status', async (req, res) => {
     },
     group: {
       id: gid || profileCache.groupId || null,
-      name: profileCache.groupName || null
+      name: profileCache.groupName || null,
+      needsGroup: !gid
+    },
+    vault: {
+      name: vaultName()
     },
     net: {
       publicIp: profileCache.publicIp,
@@ -645,13 +685,79 @@ app.get('/api/status', async (req, res) => {
       waDown: transferStats.waDown
     },
     pair: {
-      needsLink: !(sock?.user?.id || sock?.authState?.creds?.registered),
+      needsLink: !sock?.user?.id,
       code: pairingCode || null,
       phone: pairingPhone || cfgPhone || null,
       hasQr: !!qrString,
-      linkUrl: '/qr'
+      linkUrl: '/pair'
     }
   })
+})
+
+app.get('/api/groups', async (req, res) => {
+  if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
+  try {
+    const all = await sock.groupFetchAllParticipating()
+    const groups = Object.values(all || {}).map(g => ({
+      id: g.id,
+      name: g.subject || g.id,
+      size: Array.isArray(g.participants) ? g.participants.length : (g.size || null),
+      selected: g.id === gid
+    })).sort((a, b) => String(a.name).localeCompare(String(b.name), 'uk'))
+    res.json({ ok: true, selected: gid, vault: vaultName(), groups })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/groups/select', express.json({ limit: '8kb' }), async (req, res) => {
+  if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
+  try {
+    const id = String(req.body?.id || req.body?.group || '').trim()
+    if (!id.endsWith('@g.us')) return res.status(400).json({ error: 'id must be …@g.us' })
+    const all = await sock.groupFetchAllParticipating()
+    if (!all?.[id]) return res.status(404).json({ error: 'групу не знайдено в акаунті' })
+    saveGid(id)
+    await refreshProfile(true)
+    res.json({
+      ok: true,
+      group: { id: gid, name: profileCache.groupName || all[id].subject || id }
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/groups/create', express.json({ limit: '8kb' }), async (req, res) => {
+  if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
+  try {
+    const name = String(req.body?.name || vaultName()).trim().slice(0, 60) || vaultName()
+    const me = String(sock.user.id).split(':')[0] + '@s.whatsapp.net'
+    const meta = await sock.groupCreate(name, [me])
+    const id = meta?.id || meta?.gid
+    if (!id) throw new Error('groupCreate returned no id')
+    saveGid(id)
+    profileCache.groupName = name
+    profileCache.groupId = id
+    profileCache.groupAt = Date.now()
+    console.log('Vault group created:', name, id)
+    res.json({ ok: true, group: { id, name } })
+  } catch (e) {
+    console.error('group create fail:', e.message)
+    res.status(500).json({
+      error: e.message,
+      hint: 'Або створи групу вручну в WhatsApp і обери її в списку'
+    })
+  }
+})
+
+app.post('/api/vault', express.json({ limit: '8kb' }), (req, res) => {
+  const name = String(req.body?.name || '').trim().slice(0, 60)
+  if (!name) return res.status(400).json({ error: 'name required' })
+  const cur = readAppConfig()
+  cur.drive = { ...(cur.drive || {}), name }
+  writeAppConfig(cur)
+  res.json({ ok: true, vault: { name } })
 })
 
 app.get('/api/avatar', (req, res) => {
@@ -1186,7 +1292,7 @@ async function start() {
     const { state, saveCreds } = await useMultiFileAuthState(AUTH)
     sock = makeWASocket({
       auth: state,
-      browser: Browsers.ubuntu('Chrome'),
+      browser: Browsers.ubuntu(vaultName()),
       connectTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
       logger: pino({ level: 'silent' }),
@@ -1220,6 +1326,8 @@ async function start() {
         pairingAt = 0
         connectedAt = Date.now()
         console.log('WhatsApp connected:', sock.user?.id)
+        if (!gid) console.log('No vault group yet — open UI and select/create one')
+        else console.log('Vault group:', gid)
         refreshProfile(true).catch(() => {})
         refreshPublicIp(true).catch(() => {})
       }
@@ -1236,11 +1344,7 @@ async function start() {
 
     sock.ev.on('messages.upsert', async ({ messages }) => {
       for (const m of messages) {
-        if (m.key.remoteJid?.endsWith('@g.us') && !gid) {
-          gid = m.key.remoteJid
-          fs.writeFileSync(GROUP, gid)
-          console.log('Group saved:', gid)
-        }
+        // do not auto-bind random groups — user picks vault in UI
         indexMedia(m)
       }
     })
