@@ -1,84 +1,1339 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WattSapDrive</title>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WattSapDrive</title>
 <style>
+:root{
+  --bg:#0e1116; --panel:#161b22; --panel-2:#0d1117; --line:#242b36;
+  --line-soft:#1c232e; --txt:#e6edf3; --muted:#8b949e; --muted-2:#6e7681;
+  --wa:#25D366; --wa-2:#1eb257; --wa-deep:#128C7E; --danger:#f8737f;
+  --hover:#1b222c; --radius:12px;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui;background:#0f0f14;color:#e0e0e0;max-width:960px;margin:0 auto;padding:20px}
-h1{background:linear-gradient(135deg,#25D366,#128C7E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2rem;margin-bottom:24px}
-.card{background:#1a1a24;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #2a2a38}
-.upload-zone{border:2px dashed #25D366;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
-.upload-zone:hover{background:#25D36611}
-.upload-zone.drag{background:#25D36622;border-color:#128C7E}
-input[type="file"]{display:none}
-table{width:100%;border-collapse:collapse}
-th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #2a2a38}
-th{color:#25D366;font-size:0.85rem;text-transform:uppercase;letter-spacing:.5px}
-td{font-size:0.9rem}
-.size{color:#888;font-family:monospace}
-.btn{background:#25D366;color:#000;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600}
-.btn:hover{background:#128C7E}
-.status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.8rem}
-.online{background:#25D36622;color:#25D366}
-.loading{opacity:.5;pointer-events:none}
-</style></head>
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:
+  radial-gradient(1200px 600px at 80% -10%,#12321f22,transparent),
+  radial-gradient(900px 500px at -10% 0%,#0f2a1c33,transparent),
+  var(--bg);
+  color:var(--txt);max-width:1080px;margin:0 auto;padding:22px;min-height:100vh}
+::selection{background:#25D36644}
+h1{display:flex;align-items:center;gap:10px;font-size:1.7rem;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
+h1 .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--wa),var(--wa-deep));
+  display:grid;place-items:center;font-size:1.1rem;box-shadow:0 4px 14px #25D36633}
+h1 .word{background:linear-gradient(135deg,#eafff2,#8fe9b5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--muted);margin-bottom:18px;font-size:.85rem}
+.sub code{background:#ffffff0d;padding:1px 6px;border-radius:6px;color:#b9c2cc}
+.card{background:linear-gradient(180deg,#1a2029,#141922);border-radius:var(--radius);
+  padding:18px;margin-bottom:16px;border:1px solid var(--line);box-shadow:0 1px 0 #ffffff08 inset,0 8px 24px #0006}
+.upload-zone{border:1.5px dashed #2f6f4a;border-radius:var(--radius);padding:22px;text-align:center;cursor:pointer;transition:.15s}
+.upload-zone:hover,.upload-zone.drag{background:#25D3660e;border-color:var(--wa)}
+input[type=file]{display:none}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.btn{background:var(--wa);color:#04140b;border:none;padding:8px 14px;border-radius:9px;cursor:pointer;
+  font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:.85rem;transition:.13s}
+.btn:hover{background:var(--wa-2);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.secondary{background:#232b36;color:var(--txt);border:1px solid var(--line)}
+.btn.secondary:hover{background:#2b3542;border-color:#374252}
+.btn.danger{background:#2a1418;color:var(--danger);border:1px solid #4a2027}
+.btn.danger:hover{background:#3a1a20}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* compact square icon buttons for row actions (file-manager feel) */
+.iconbtn{width:32px;height:32px;padding:0;display:inline-grid;place-items:center;border-radius:8px;
+  background:transparent;border:1px solid transparent;color:var(--muted);cursor:pointer;font-size:.95rem;
+  text-decoration:none;transition:.12s;line-height:1}
+.iconbtn:hover{background:#232b36;color:var(--txt);border-color:var(--line)}
+.iconbtn.dl:hover{color:var(--wa);border-color:#2f6f4a;background:#25D3660f}
+.iconbtn.danger:hover{color:var(--danger);border-color:#4a2027;background:#f8737f14}
+.status{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:.72rem;font-weight:600;letter-spacing:.02em}
+.status::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.on{background:#25D36618;color:var(--wa)}
+.off{background:#f8737f1a;color:var(--danger)}
+.err{color:var(--danger);margin-top:10px;font-size:.85rem}
+.okmsg{color:var(--wa);margin-top:10px;font-size:.85rem}
+a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:underline}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin:14px 2px 0;font-size:.82rem;color:var(--muted)}
+.stats b{color:var(--txt);font-weight:600}
+.field{margin-top:14px;text-align:left}
+.field label{display:block;color:var(--muted);font-size:.78rem;margin-bottom:6px}
+.field select,.field input,.search{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--txt);
+  border-radius:9px;padding:10px 12px;font-size:.92rem;transition:.13s}
+.field select:focus,.field input:focus,.search:focus{outline:none;border-color:#2f6f4a;box-shadow:0 0 0 3px #25D3661f}
+.progress-wrap{display:none;margin-top:16px;text-align:left}
+.progress-wrap.active{display:block}
+.bar{height:9px;background:var(--panel-2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--wa),var(--wa-deep));transition:width .12s linear}
+.prog-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:.85rem;color:var(--muted);flex-wrap:wrap;align-items:center}
+.prog-meta{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:.78rem;color:var(--muted);font-family:ui-monospace,monospace}
+.prog-meta b{color:var(--txt);font-weight:600}
+.job-list{margin-top:10px;max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.job{display:flex;gap:10px;align-items:center;padding:8px 11px;border-bottom:1px solid var(--line-soft);font-size:.83rem}
+.job:last-child{border-bottom:none}
+.job .path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job .st{min-width:88px;text-align:right;font-family:ui-monospace,monospace}
+.st.wait{color:var(--muted-2)}.st.run{color:#e3b341}.st.wa{color:#6cb6ff}.st.ok{color:var(--wa)}.st.fail{color:var(--danger)}.st.skip{color:var(--muted-2)}
+.st.dir{color:#6cb6ff}.st.file{color:#7ee787}.st.scan{color:#e3b341}
+.tree{font-size:.92rem}
+.folder{margin:3px 0}
+.folder>summary{
+  list-style:none;cursor:pointer;padding:9px 12px;border-radius:9px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--txt);user-select:none;
+  display:flex;gap:10px;align-items:center;transition:.12s}
+.folder>summary:hover{background:var(--hover);border-color:#2c3542}
+.folder>summary::-webkit-details-marker{display:none}
+.folder>summary::before{content:'▸';color:var(--muted);font-size:.9rem;width:12px;text-align:center;transition:transform .12s}
+.folder[open]>summary::before{transform:rotate(90deg)}
+.folder>summary .ico{font-size:1rem}
+.folder>summary::after{}
+.folder>.body{margin-left:16px;border-left:1px solid var(--line);padding-left:10px;margin-top:3px}
+.sum-name{flex:1;font-weight:600;color:#dfe7ee;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-meta{color:var(--muted-2);font-weight:500;font-size:.76rem;font-family:ui-monospace,monospace;white-space:nowrap}
+.row-actions{display:flex;gap:4px;align-items:center;opacity:0;transition:.12s}
+.folder>summary:hover .row-actions,.file:hover .row-actions{opacity:1}
+.file{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:9px;border-bottom:1px solid var(--line-soft)}
+.file:last-child{border-bottom:none}
+.file:hover{background:var(--hover)}
+.fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dfe7ee}
+.fname .ico{opacity:.85;margin-right:2px}
+.meta{color:var(--muted-2);font-family:ui-monospace,monospace;font-size:.76rem;white-space:nowrap}
+.ops{display:flex;gap:4px;align-items:center}
+.root-label{color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;margin:6px 2px 8px;font-weight:600}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.toolbar h2{color:var(--muted);text-transform:uppercase;font-size:.8rem;letter-spacing:.05em}
+#empty{text-align:center;color:var(--muted-2);padding:26px}
+.hint{color:var(--muted-2);font-size:.75rem;margin-top:8px}
+.hint code{background:#ffffff0d;padding:1px 5px;border-radius:5px}
+/* —— Yazi-style 3-pane disk browser —— */
+.card-disk{padding:12px 14px 10px;background:#0b0e14;border-color:#1a2030}
+.card-disk .toolbar{margin-bottom:8px}
+.card-disk .toolbar h2{color:#6b7585;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+.yazi-path{
+  font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+  font-size:.82rem;color:#7dd3fc;padding:4px 6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.yazi{
+  display:grid;grid-template-columns:minmax(120px,.9fr) minmax(200px,1.35fr) minmax(160px,1.1fr);
+  gap:0;height:min(62vh,560px);border:1px solid #1e2636;border-radius:8px;overflow:hidden;
+  background:#0a0d13;font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;font-size:.84rem
+}
+.yazi-col{overflow:auto;padding:4px 0;min-width:0}
+.yazi-col+.yazi-col{border-left:1px solid #151b28}
+.yazi-main{background:#0c1018}
+.yazi-prev{color:#9aa4b2;background:#090c12}
+.yazi-row{
+  display:flex;align-items:center;gap:8px;padding:3px 10px;cursor:pointer;user-select:none;
+  white-space:nowrap;overflow:hidden;border-radius:0;color:#c8d0da
+}
+.yazi-row:hover{background:#141b28}
+.yazi-row.sel{background:#89b4fa;color:#0b1220}
+.yazi-row.sel .yazi-meta,.yazi-row.sel .yazi-ico{color:#0b1220;opacity:.85}
+.yazi-row.cwd{background:#1a2740;color:#e8eef7}
+.yazi-ico{flex:0 0 auto;width:1.2em;text-align:center;opacity:.95}
+.yazi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.yazi-meta{flex:0 0 auto;color:#6b7585;font-size:.75rem;padding-left:6px}
+.yazi-row.t-dir .yazi-name{color:#89b4fa}
+.yazi-row.t-img .yazi-name{color:#5eead4}
+.yazi-row.t-vid .yazi-name{color:#fbbf24}
+.yazi-row.t-aud .yazi-name{color:#c4b5fd}
+.yazi-row.t-zip .yazi-name{color:#93c5fd}
+.yazi-row.t-code .yazi-name{color:#e5e7eb}
+.yazi-row.t-doc .yazi-name{color:#fca5a5}
+.yazi-row.sel.t-dir .yazi-name,
+.yazi-row.sel.t-img .yazi-name,
+.yazi-row.sel.t-vid .yazi-name,
+.yazi-row.sel.t-aud .yazi-name,
+.yazi-row.sel.t-zip .yazi-name,
+.yazi-row.sel.t-code .yazi-name,
+.yazi-row.sel.t-doc .yazi-name{color:#0b1220}
+.yazi-empty{padding:16px 12px;color:#4b5565;font-size:.8rem}
+.yazi-prev-head{padding:8px 12px 4px;color:#6b7585;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.yazi-prev-body{padding:4px 12px 12px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#a8b3c2;font-size:.8rem}
+.yazi-prev-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px 12px}
+.yazi-prev-actions .btn{padding:5px 10px;font-size:.78rem;border-radius:6px}
+.yazi-foot{
+  display:flex;gap:14px;flex-wrap:wrap;padding:8px 4px 0;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:.75rem;color:#6b7585
+}
+.yazi-foot b{color:#c8d0da;font-weight:600}
+#empty{display:none}
+@media (max-width:820px){
+  .yazi{grid-template-columns:1fr 1.2fr;height:min(55vh,480px)}
+  .yazi-col:first-child{display:none}
+}
+@media (max-width:560px){
+  .yazi{grid-template-columns:1fr}
+  .yazi-prev{display:none}
+}
+/* scrollbars */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:#2a3340;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:#3a4552;background-clip:content-box}
+</style>
+</head>
 <body>
-<h1>🟢 WattSapDrive</h1>
+<h1><span class="logo">☁</span><span class="word">WattSapDrive</span> <span id="badge" class="status off">offline</span></h1>
+<p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/qr" target="_blank">QR-логін</a></p>
+
 <div class="card">
   <div class="upload-zone" id="dropzone">
-    <p style="font-size:3rem">📤</p>
-    <p>Drop files or click to upload</p>
-    <p style="color:#888;font-size:0.8rem;margin-top:8px">Max 2GB per file</p>
+    <p style="font-size:2rem">📤</p>
+    <p>Кинь файли / папку — без шляху → <b>корінь /</b></p>
+    <div class="field" onclick="event.stopPropagation()">
+      <label>Куди зберігати</label>
+      <select id="targetFolder"><option value="">/ (корінь)</option></select>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="btnFiles">Файли</button>
+      <button type="button" class="btn secondary" id="btnFolder" title="Обрати саме папку (не окремі файли)">Залити папку</button>
+      <button type="button" class="btn secondary" id="btnMkdir">Створити папку</button>
+    </div>
+    <p class="hint" style="margin-top:10px">«Залити папку» відкриває вибір <b>директорії</b>. Або просто перетягни папку в цю зону.</p>
+    <label class="hint" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer;margin-top:6px" onclick="event.stopPropagation()">
+      <input type="checkbox" id="skipJunk" style="width:auto">
+      пропускати службові (<code>.DS_Store</code>, <code>node_modules</code>, <code>.git</code>)
+    </label>
     <input type="file" id="fileInput" multiple>
+    <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
   </div>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="prog-head">
+      <span id="progLabel">Завантаження…</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span id="progPct">0%</span>
+        <button type="button" class="btn danger" id="btnStop">■ Стоп</button>
+      </span>
+    </div>
+    <div class="bar"><i id="progBar"></i></div>
+    <div class="prog-meta" id="progMeta">
+      <span>швидкість: <b id="progSpeed">—</b></span>
+      <span>залишилось: <b id="progEta">—</b></span>
+      <span>обʼєм: <b id="progBytes">—</b></span>
+      <span>фаза: <b id="progPhase">—</b></span>
+    </div>
+    <div class="job-list" id="jobList"></div>
+  </div>
+  <p id="msg" class="err"></p>
+  <div class="stats" id="stats"></div>
 </div>
-<div class="card">
-  <h2 style="color:#888;text-transform:uppercase;font-size:0.85rem;margin-bottom:12px">📁 Files</h2>
-  <table id="filesTable"><thead><tr><th>Name</th><th>Size</th><th>Type</th></tr></thead><tbody></tbody></table>
-  <p id="emptyMsg" style="text-align:center;color:#555;padding:20px">No files yet. Upload something!</p>
+
+<div class="card card-disk">
+  <div class="toolbar">
+    <h2>Диск</h2>
+    <input class="search" id="search" placeholder="Пошук…" style="flex:1;min-width:140px">
+    <button type="button" class="btn secondary" id="btnMkdir2">+ Папка</button>
+    <button type="button" class="btn secondary" id="btnRefresh">Оновити</button>
+  </div>
+  <div class="yazi-path" id="yaziPath">/</div>
+  <div class="yazi" id="tree">
+    <div class="yazi-col" id="yaziParent"></div>
+    <div class="yazi-col yazi-main" id="yaziMain"></div>
+    <div class="yazi-col yazi-prev" id="yaziPrev"></div>
+  </div>
+  <div class="yazi-foot" id="yaziFoot"></div>
+  <p id="empty">Поки порожньо</p>
 </div>
-<div style="text-align:center;color:#555;font-size:0.75rem;margin-top:20px">Powered by WhatsApp • WattSapDrive v0.1</div>
+
 <script>
 const dropzone = document.getElementById('dropzone')
 const fileInput = document.getElementById('fileInput')
-const table = document.getElementById('filesTable').querySelector('tbody')
-const emptyMsg = document.getElementById('emptyMsg')
+const folderInput = document.getElementById('folderInput')
+const targetFolder = document.getElementById('targetFolder')
+const treeEl = document.getElementById('tree')
+const yaziParent = document.getElementById('yaziParent')
+const yaziMain = document.getElementById('yaziMain')
+const yaziPrev = document.getElementById('yaziPrev')
+const yaziPath = document.getElementById('yaziPath')
+const yaziFoot = document.getElementById('yaziFoot')
+const empty = document.getElementById('empty')
+const badge = document.getElementById('badge')
+const msg = document.getElementById('msg')
+const statsEl = document.getElementById('stats')
+const progressWrap = document.getElementById('progressWrap')
+const progBar = document.getElementById('progBar')
+const progPct = document.getElementById('progPct')
+const progLabel = document.getElementById('progLabel')
+const progSpeed = document.getElementById('progSpeed')
+const progEta = document.getElementById('progEta')
+const progBytes = document.getElementById('progBytes')
+const progPhase = document.getElementById('progPhase')
+const jobList = document.getElementById('jobList')
+const searchEl = document.getElementById('search')
+const skipJunkEl = document.getElementById('skipJunk')
+const btnStop = document.getElementById('btnStop')
 
-dropzone.onclick = () => fileInput.click()
+let uploading = false
+let scanning = false
+let cancelRequested = false
+let activeXhr = null
+let driveState = { folders: [], files: [], defaultFolder: '' }
+let API_TOKEN = localStorage.getItem('ws_token') || ''
+let searchQ = ''
+// Yazi miller columns: current folder + selected entry key
+let cwd = localStorage.getItem('ws_cwd') || ''
+let selectedKey = localStorage.getItem('ws_sel') || ''
+function persistNav() {
+  try {
+    localStorage.setItem('ws_cwd', cwd)
+    localStorage.setItem('ws_sel', selectedKey)
+  } catch {}
+}
+const PER_FILE_TIMEOUT_MS = 210000
+
+function setStopEnabled(on) {
+  btnStop.disabled = !on
+}
+
+function requestCancel() {
+  if (!uploading && !scanning) return
+  cancelRequested = true
+  progPhase.textContent = 'зупиняю…'
+  msg.className = 'err'
+  msg.textContent = 'Зупиняю після поточного файлу…'
+  if (activeXhr) { try { activeXhr.abort() } catch {} }
+}
+
+btnStop.onclick = e => { e.stopPropagation(); requestCancel() }
+setStopEnabled(false)
+
+// Only WattSapDrive's own markers are always refused; everything else uploads
+function isReservedPath(rel) {
+  const parts = String(rel || '').replace(/\\/g, '/').split('/').filter(Boolean)
+  const base = parts[parts.length - 1] || ''
+  if (!base) return true
+  if (base === '.keep') return true
+  if (parts.slice(0, -1).some(p => p === '_system' || p === '.ws')) return true
+  return false
+}
+
+// Optional filter, only when the user ticks "пропускати службові"
+function isJunkPath(rel) {
+  const parts = String(rel || '').replace(/\\/g, '/').split('/').filter(Boolean)
+  const base = parts[parts.length - 1] || ''
+  if (base === '.DS_Store' || base === 'Thumbs.db' || /^desktop\.ini$/i.test(base)) return true
+  if (parts.some(p => p === 'node_modules' || p === '.git' || p === '__MACOSX')) return true
+  return false
+}
+
+function fmtSpeed(bps) {
+  if (!bps || !Number.isFinite(bps) || bps <= 0) return '—'
+  return fmtSize(bps) + '/s'
+}
+function fmtEta(sec) {
+  if (!Number.isFinite(sec) || sec < 0 || sec === Infinity) return '—'
+  sec = Math.round(sec)
+  if (sec < 60) return sec + ' с'
+  const m = Math.floor(sec / 60), s = sec % 60
+  if (m < 60) return m + ' хв ' + s + ' с'
+  const h = Math.floor(m / 60)
+  return h + ' год ' + (m % 60) + ' хв'
+}
+
+async function api(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {})
+  if (API_TOKEN) headers.Authorization = 'Bearer ' + API_TOKEN
+  return fetch(url, { ...opts, headers })
+}
+
+document.getElementById('btnFiles').onclick = e => { e.stopPropagation(); fileInput.click() }
+document.getElementById('btnFolder').onclick = e => { e.stopPropagation(); pickFolder() }
+document.getElementById('btnMkdir').onclick = e => { e.stopPropagation(); createFolder() }
+document.getElementById('btnMkdir2').onclick = () => createFolder()
+document.getElementById('btnRefresh').onclick = () => loadDrive()
+searchEl.oninput = () => { searchQ = searchEl.value.trim().toLowerCase(); renderDrive() }
+dropzone.onclick = e => { if (!e.target.closest('button,select,label,.field')) fileInput.click() }
+
+async function walkDirHandle(dirHandle, prefix, stats) {
+  const out = []
+  const skipJunk = !!(skipJunkEl && skipJunkEl.checked)
+  let tick = 0
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (cancelRequested) break
+    const rel = prefix ? `${prefix}/${name}` : name
+    if (handle.kind === 'file') {
+      const file = await handle.getFile()
+      out.push({ file, path: rel })
+      if (stats) {
+        stats.files++
+        stats.bytes += file.size || 0
+        stats.onProgress?.({ kind: 'file', path: rel, size: file.size || 0, ...stats })
+      }
+    } else if (handle.kind === 'directory') {
+      if (skipJunk && (name === 'node_modules' || name === '.git' || name === '__MACOSX')) {
+        if (stats) {
+          stats.skippedDirs++
+          stats.onProgress?.({ kind: 'skip-dir', path: rel, ...stats })
+        }
+        continue
+      }
+      if (stats) {
+        stats.dirs++
+        stats.onProgress?.({ kind: 'dir', path: rel, ...stats })
+      }
+      out.push(...await walkDirHandle(handle, rel, stats))
+    }
+    // let the browser paint the scan list on big trees
+    if (++tick % 8 === 0) await new Promise(r => setTimeout(r, 0))
+  }
+  return out
+}
+
+function beginScanUI(rootName) {
+  progressWrap.classList.add('active')
+  jobList.innerHTML = ''
+  progBar.style.width = '0%'
+  progPct.textContent = '…'
+  progLabel.textContent = `Читаю «${rootName}»…`
+  progPhase.textContent = 'скан'
+  progSpeed.textContent = '—'
+  progEta.textContent = '—'
+  progBytes.textContent = '0 B'
+}
+
+function appendScanRow(kind, path, extra) {
+  const row = document.createElement('div')
+  row.className = 'job'
+  const label = kind === 'dir' ? '📁'
+    : kind === 'skip-dir' ? '⏭'
+    : kind === 'file' ? '📄'
+    : '·'
+  const stClass = kind === 'dir' ? 'dir' : kind === 'file' ? 'file' : kind === 'skip-dir' ? 'skip' : 'scan'
+  const stText = kind === 'dir' ? 'папка'
+    : kind === 'skip-dir' ? 'skip'
+    : kind === 'file' ? (extra || 'файл')
+    : ''
+  row.innerHTML = `<div class="path" title="${escapeHtml(path)}">${label} ${escapeHtml(path)}</div><div class="st ${stClass}">${escapeHtml(stText)}</div>`
+  jobList.appendChild(row)
+  // keep list usable: drop oldest rows beyond ~200
+  while (jobList.children.length > 200) jobList.removeChild(jobList.firstChild)
+  row.scrollIntoView({ block: 'nearest' })
+}
+
+function updateScanMeta(stats) {
+  progLabel.textContent = `Читаю «${stats.root}»… 📁 ${stats.dirs} · 📄 ${stats.files}`
+  progBytes.textContent = fmtSize(stats.bytes)
+  progPhase.textContent = stats.current || 'скан'
+  progPct.textContent = stats.files + 'ф'
+}
+
+async function pickFolder() {
+  // Chromium File System Access API — справжній вибір папки (не файловий діалог)
+  if (typeof window.showDirectoryPicker === 'function') {
+    try {
+      const dir = await window.showDirectoryPicker({ mode: 'read', id: 'wattsapdrive-folder' })
+      const rootPrefix = dir.name || 'folder'
+      cancelRequested = false
+      scanning = true
+      setStopEnabled(true)
+      beginScanUI(rootPrefix)
+      msg.className = 'okmsg'
+      msg.textContent = `Читаю папку «${dir.name}»…`
+
+      let lastPaint = 0
+      const stats = {
+        root: rootPrefix,
+        dirs: 0,
+        files: 0,
+        bytes: 0,
+        skippedDirs: 0,
+        current: '',
+        onProgress(ev) {
+          stats.current = ev.path
+          const now = performance.now()
+          // paint every entry for dirs; throttle file rows a bit for huge trees
+          const force = ev.kind === 'dir' || ev.kind === 'skip-dir' || stats.files <= 40 || stats.files % 5 === 0
+          if (force || now - lastPaint > 80) {
+            lastPaint = now
+            if (ev.kind === 'dir' || ev.kind === 'skip-dir') {
+              appendScanRow(ev.kind, ev.path)
+            } else if (ev.kind === 'file') {
+              appendScanRow('file', ev.path, fmtSize(ev.size || 0))
+            }
+            updateScanMeta(stats)
+          } else {
+            // still refresh counters without flooding the list
+            updateScanMeta(stats)
+          }
+        }
+      }
+
+      const files = await walkDirHandle(dir, rootPrefix, stats)
+      scanning = false
+      updateScanMeta(stats)
+
+      if (cancelRequested) {
+        setStopEnabled(false)
+        progPhase.textContent = 'скан зупинено'
+        msg.className = 'err'
+        msg.textContent = `Скан зупинено · знайдено 📁 ${stats.dirs} · 📄 ${stats.files}. Нічого не залито.`
+        cancelRequested = false
+        return
+      }
+
+      progPhase.textContent = 'скан готово'
+      msg.className = 'okmsg'
+      msg.textContent = `Знайдено: 📁 ${stats.dirs} папок · 📄 ${stats.files} файлів · ${fmtSize(stats.bytes)}` +
+        (stats.skippedDirs ? ` · skip ${stats.skippedDirs}` : '')
+
+      if (!files.length) {
+        setStopEnabled(false)
+        msg.className = 'err'
+        msg.textContent = 'У папці немає файлів'
+        return
+      }
+      // short pause so user sees the scan summary, then upload
+      await new Promise(r => setTimeout(r, 350))
+      return uploadList(files)
+    } catch (e) {
+      scanning = false
+      setStopEnabled(false)
+      if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) return
+      // fallback нижче
+      console.warn('showDirectoryPicker failed, fallback to input', e)
+    }
+  }
+  // Старий шлях: webkitdirectory (на Linux часто виглядає як вибір файлів)
+  msg.className = 'okmsg'
+  msg.textContent = 'Обери папку в діалозі (може виглядати як файли — виділи теку й Open / Відкрити)'
+  folderInput.value = ''
+  folderInput.click()
+}
+
 dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('drag') }
 dropzone.ondragleave = () => dropzone.classList.remove('drag')
-dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove('drag'); handleFiles(e.dataTransfer.files) }
-fileInput.onchange = () => handleFiles(fileInput.files)
-
-async function handleFiles(files) {
-  for (const file of files) {
-    const data = new Uint8Array(await file.arrayBuffer())
-    await fetch('/api/upload', { method: 'POST', body: data, headers: { 'x-file-name': file.name } })
+dropzone.ondrop = async e => {
+  e.preventDefault(); dropzone.classList.remove('drag')
+  const items = [...(e.dataTransfer.items || [])]
+  if (items.some(i => i.webkitGetAsEntry)) {
+    const files = await readDataTransferItems(items)
+    if (files.length) return uploadList(files)
   }
-  loadFiles()
+  uploadList([...e.dataTransfer.files].map(f => ({ file: f, path: f.name })))
+}
+fileInput.onchange = () => uploadList([...fileInput.files].map(f => ({ file: f, path: f.name })))
+folderInput.onchange = () => uploadList([...folderInput.files].map(f => ({
+  file: f, path: f.webkitRelativePath || f.name
+})))
+
+async function readDataTransferItems(items) {
+  const out = []
+  const entries = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean)
+  async function walk(entry, prefix) {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej))
+      out.push({ file, path: prefix ? `${prefix}/${file.name}` : file.name })
+      return
+    }
+    if (!entry.isDirectory) return
+    const nextPrefix = prefix ? `${prefix}/${entry.name}` : entry.name
+    const reader = entry.createReader()
+    let batch
+    do {
+      batch = await new Promise((res, rej) => reader.readEntries(res, rej))
+      for (const child of batch) await walk(child, nextPrefix)
+    } while (batch.length)
+  }
+  for (const ent of entries) await walk(ent, '')
+  const seen = new Set()
+  return out.filter(x => {
+    const k = x.path + ':' + x.file.size
+    if (seen.has(k)) return false
+    seen.add(k); return true
+  })
 }
 
-async function loadFiles() {
+function toNum(v){ if(v==null)return 0; if(typeof v==='number')return v; if(typeof v==='object'&&'low'in v)return Number(v.low)||0; return Number(v)||0 }
+function fmtSize(bytes){
+  bytes=toNum(bytes); if(!bytes) return '0 B'
+  const u=['B','KB','MB','GB']; let i=0
+  while(bytes>=1024&&i<3){bytes/=1024;i++}
+  return bytes.toFixed(i?1:0)+' '+u[i]
+}
+function fmtDate(iso){
+  if(!iso) return '—'
+  const d=new Date(iso); if(Number.isNaN(+d)) return '—'
+  return d.toLocaleString('uk-UA',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fileIcon(name){
+  const e=String(name||'').split('.').pop().toLowerCase()
+  if(['png','jpg','jpeg','gif','webp','svg','bmp','heic'].includes(e))return '🖼️'
+  if(['mp4','mkv','mov','avi','webm','m4v'].includes(e))return '🎬'
+  if(['mp3','wav','flac','ogg','m4a','aac'].includes(e))return '🎵'
+  if(['zip','rar','7z','tar','gz','xz'].includes(e))return '🗜️'
+  if(['pdf'].includes(e))return '📕'
+  if(['doc','docx','odt','rtf'].includes(e))return '📘'
+  if(['xls','xlsx','csv','ods'].includes(e))return '📗'
+  if(['ppt','pptx','odp'].includes(e))return '📙'
+  if(['js','ts','py','sh','json','html','css','c','cpp','java','go','rs','rb','php'].includes(e))return '📜'
+  if(['txt','md','log'].includes(e))return '📄'
+  return '📄'
+}
+
+function resolveUploadPath(rel) {
+  const clean = String(rel||'').replace(/\\/g,'/').replace(/^\/+/,'')
+  if (clean.includes('/')) return clean
+  const folder = targetFolder.value || ''
+  return folder ? `${folder}/${clean}` : clean
+}
+
+function xhrUpload(file, path, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    activeXhr = xhr
+    let settled = false
+    let waTimer = null
+    let waTick = 0
+    const finish = (fn, arg) => {
+      if (settled) return
+      settled = true
+      clearTimeout(hardTimeout)
+      clearInterval(waTimer)
+      if (activeXhr === xhr) activeXhr = null
+      fn(arg)
+    }
+    xhr.open('POST', '/api/upload')
+    xhr.setRequestHeader('x-file-name', path)
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+    if (API_TOKEN) xhr.setRequestHeader('Authorization', 'Bearer ' + API_TOKEN)
+    xhr.timeout = PER_FILE_TIMEOUT_MS
+    xhr.upload.onprogress = e => {
+      if (!e.lengthComputable) return
+      onProgress({ phase: 'http', loaded: e.loaded, total: e.total || file.size })
+    }
+    xhr.upload.onload = () => {
+      // HTTP body already on server — now Baileys sends to WhatsApp (can take long)
+      onProgress({ phase: 'wa', loaded: file.size, total: file.size, waMs: 0 })
+      waTimer = setInterval(() => {
+        waTick += 1
+        onProgress({ phase: 'wa', loaded: file.size, total: file.size, waMs: waTick * 1000 })
+      }, 1000)
+    }
+    xhr.onload = () => {
+      let j = {}
+      try { j = JSON.parse(xhr.responseText || '{}') } catch {}
+      if (xhr.status >= 200 && xhr.status < 300) finish(resolve, j)
+      else finish(reject, new Error(j.error || xhr.statusText || String(xhr.status)))
+    }
+    xhr.onerror = () => finish(reject, new Error('network error'))
+    xhr.onabort = () => finish(reject, new Error('скасовано'))
+    xhr.ontimeout = () => finish(reject, new Error('timeout ' + PER_FILE_TIMEOUT_MS + 'ms'))
+    const hardTimeout = setTimeout(() => {
+      try { xhr.abort() } catch {}
+      finish(reject, new Error('abort timeout'))
+    }, PER_FILE_TIMEOUT_MS + 5000)
+    xhr.send(file)
+  })
+}
+
+async function uploadList(list) {
+  if (!list.length || uploading) return
+  const skipJunk = !!(skipJunkEl && skipJunkEl.checked)
+  const filtered = []
+  let skipped = 0
+  const skipReasons = []
+  for (const item of list) {
+    const rel = resolveUploadPath(item.path || item.file.name)
+    let reason = ''
+    if (isReservedPath(rel)) reason = 'службова назва WattSapDrive'
+    else if (!item.file.size) reason = 'порожній (0 B)'
+    else if (skipJunk && isJunkPath(rel)) reason = 'junk'
+    if (reason) {
+      skipped++
+      if (skipReasons.length < 5) skipReasons.push(`${rel} — ${reason}`)
+      continue
+    }
+    filtered.push({ file: item.file, path: rel })
+  }
+  if (!filtered.length) {
+    msg.className = 'err'
+    msg.textContent = skipped
+      ? `Нічого не залито. Пропущено ${skipped}: ${skipReasons.join('; ')}`
+      : 'Порожній список'
+    return
+  }
+
+  uploading = true
+  cancelRequested = false
+  setStopEnabled(true)
+  msg.textContent = ''; msg.className = 'err'
+  progressWrap.classList.add('active')
+  jobList.innerHTML = ''
+
+  const totalBytes = filtered.reduce((s, x) => s + (x.file.size || 0), 0)
+  let doneBytes = 0
+  let doneFiles = 0
+  let failed = 0
+  const t0 = performance.now()
+  const samples = [] // {t, bytes}
+
+  function pushSample(bytes) {
+    const t = performance.now()
+    samples.push({ t, bytes })
+    while (samples.length > 12 || (samples.length > 2 && t - samples[0].t > 8000)) samples.shift()
+  }
+  function currentSpeed(bytesNow) {
+    pushSample(bytesNow)
+    if (samples.length < 2) {
+      const elapsed = (performance.now() - t0) / 1000
+      return elapsed > 0.2 ? bytesNow / elapsed : 0
+    }
+    const a = samples[0], b = samples[samples.length - 1]
+    const dt = (b.t - a.t) / 1000
+    return dt > 0.05 ? (b.bytes - a.bytes) / dt : 0
+  }
+  function renderOverall(currentPath, phase, fileLoaded, fileSize, waMs) {
+    const inFile = Math.min(fileLoaded || 0, fileSize || 0)
+    // For WA phase HTTP already finished — count full file toward overall only when done;
+    // during WA keep overall at doneBytes (don't fake WA bytes), but show phase.
+    const overallBytes = doneBytes + (phase === 'http' ? inFile : 0)
+    const pct = totalBytes ? Math.min(99.5, (overallBytes / totalBytes) * 100) : 0
+    const displayPct = phase === 'done' ? Math.round(doneBytes / totalBytes * 100) : Math.round(pct)
+    const speed = currentSpeed(overallBytes)
+    let remain = totalBytes - overallBytes
+    if (phase === 'wa') remain = Math.max(remain, fileSize || 0)
+    const etaSec = speed > 256 ? remain / speed : NaN
+    progBar.style.width = displayPct + '%'
+    progPct.textContent = displayPct + '%'
+    progBytes.textContent = `${fmtSize(doneBytes)} / ${fmtSize(totalBytes)}`
+    progSpeed.textContent = fmtSpeed(speed)
+    progEta.textContent = fmtEta(etaSec)
+    progPhase.textContent = phase === 'http' ? 'HTTP → сервер'
+      : phase === 'wa' ? `WhatsApp… ${waMs ? Math.round(waMs/1000)+'с' : ''}`
+      : phase === 'done' ? 'готово' : '—'
+    progLabel.textContent = `${doneFiles}/${filtered.length} · ${currentPath || ''}`
+  }
+
+  const jobs = filtered.map(({ file, path }) => {
+    const row = document.createElement('div')
+    row.className = 'job'
+    row.innerHTML = `<div class="path" title="${escapeHtml(path)}">${escapeHtml(path)} <span class="meta">(${fmtSize(file.size)})</span><span class="reason meta" style="color:#ff8888"></span></div><div class="st wait">чекає</div>`
+    jobList.appendChild(row)
+    return {
+      file, path,
+      st: row.querySelector('.st'),
+      reasonEl: row.querySelector('.reason'),
+      row,
+      attempts: 0,
+      done: false,
+      reason: ''
+    }
+  })
+
+  if (skipped) {
+    msg.className = 'okmsg'
+    msg.textContent = `Пропущено ${skipped}: ${skipReasons.join('; ')}`
+  }
+
+  function setReason(job, text) {
+    job.reason = text || ''
+    job.reasonEl.textContent = text ? ' — ' + text : ''
+    job.row.title = text ? `${job.path}\n${text}` : job.path
+  }
+
+  // returns 'ok' | 'fail' | 'cancel'
+  async function runJob(job, isRetry) {
+    if (cancelRequested) return 'cancel'
+    job.attempts++
+    job.st.className = 'st run'
+    job.st.textContent = isRetry ? '↻' : '0%'
+    setReason(job, '')
+    job.row.scrollIntoView({ block: 'nearest' })
+    // wait until WA online before starting file (avoid freeze on 503 loop)
+    for (let i = 0; i < 30; i++) {
+      if (cancelRequested) return 'cancel'
+      const s = await api('/api/status').then(r => r.json()).catch(() => ({}))
+      if (s.connected || s.c) break
+      job.st.className = 'st wa'
+      job.st.textContent = 'WA…'
+      progPhase.textContent = 'чекаю WhatsApp online'
+      await new Promise(r => setTimeout(r, 1000))
+    }
+    if (cancelRequested) return 'cancel'
+    try {
+      await xhrUpload(job.file, job.path, p => {
+        if (p.phase === 'http') {
+          job.st.className = 'st run'
+          const pct = p.total ? Math.round(p.loaded / p.total * 100) : 0
+          job.st.textContent = (isRetry ? '↻ ' : '') + pct + '%'
+          renderOverall(job.path, 'http', p.loaded, p.total || job.file.size, 0)
+        } else if (p.phase === 'wa') {
+          job.st.className = 'st wa'
+          job.st.textContent = 'WA ' + (p.waMs ? Math.round(p.waMs / 1000) + 'с' : '…')
+          renderOverall(job.path, 'wa', job.file.size, job.file.size, p.waMs || 0)
+        }
+      })
+      job.st.className = 'st ok'
+      job.st.textContent = 'OK'
+      job.done = true
+      doneBytes += job.file.size
+      doneFiles++
+      renderOverall(job.path, 'done', 0, 0, 0)
+      return 'ok'
+    } catch (e) {
+      if (cancelRequested) return 'cancel'
+      job.st.className = 'st fail'
+      job.st.textContent = 'FAIL'
+      setReason(job, explainError(e))
+      renderOverall(job.path, 'http', 0, 0, 0)
+      return 'fail'
+    }
+  }
+
+  let stopped = false
+  let firstPassOk = 0
+
+  // ---- main pass ----
+  for (const job of jobs) {
+    const r = await runJob(job, false)
+    if (r === 'cancel') { stopped = true; break }
+    if (r === 'ok') firstPassOk++
+  }
+
+  // mark not-yet-started jobs when stopped
+  if (stopped) {
+    for (const job of jobs) {
+      if (!job.done && job.attempts === 0) {
+        job.st.className = 'st skip'
+        job.st.textContent = '—'
+        setReason(job, 'не дійшла черга (зупинено)')
+      }
+    }
+  }
+
+  // ---- retry passes for failed files at the end ----
+  const MAX_RETRY_PASSES = 3
+  let retryPass = 0
+  while (!stopped && !cancelRequested && retryPass < MAX_RETRY_PASSES) {
+    const pending = jobs.filter(j => !j.done)
+    if (!pending.length) break
+    retryPass++
+    progPhase.textContent = `повторна спроба ${retryPass}/${MAX_RETRY_PASSES} (${pending.length})`
+    msg.className = 'okmsg'
+    msg.textContent = `Повтор ${retryPass}: ${pending.length} файл(ів), що не залились`
+    // small delay to let WhatsApp reconnect between rounds
+    await new Promise(r => setTimeout(r, 1500))
+    for (const job of pending) {
+      const r = await runJob(job, true)
+      if (r === 'cancel') { stopped = true; break }
+    }
+  }
+
+  const okCount = jobs.filter(j => j.done).length
+  const failedJobs = jobs.filter(j => !j.done && j.attempts > 0)
+  const notReached = jobs.filter(j => !j.done && j.attempts === 0)
+
+  if (stopped || cancelRequested) {
+    progPhase.textContent = 'зупинено'
+    progEta.textContent = '—'
+    progLabel.textContent = `Зупинено · ${okCount}/${filtered.length}`
+    msg.className = 'err'
+    msg.textContent = `Зупинено · залито ${okCount} з ${filtered.length}` +
+      (failedJobs.length ? ` · з помилкою ${failedJobs.length}` : '') +
+      (notReached.length ? ` · не почато ${notReached.length}` : '')
+  } else {
+    progBar.style.width = '100%'
+    progPct.textContent = '100%'
+    progPhase.textContent = 'готово'
+    progEta.textContent = '0 с'
+    progLabel.textContent = `${okCount}/${filtered.length} ок` + (failedJobs.length ? ` · fail ${failedJobs.length}` : '')
+    if (failedJobs.length) {
+      msg.className = 'err'
+      const detail = failedJobs.slice(0, 6).map(j => `${j.path} — ${j.reason || 'помилка'}`).join('; ')
+      msg.textContent = `Залито ${okCount}, не вдалося ${failedJobs.length} (після ${MAX_RETRY_PASSES} спроб): ${detail}` +
+        (failedJobs.length > 6 ? ` …ще ${failedJobs.length - 6}` : '') +
+        (skipped ? ` · skip ${skipped}` : '')
+    } else {
+      msg.className = 'okmsg'
+      msg.textContent = `Готово · ${okCount} файл(ів)` + (skipped ? ` · skip ${skipped}` : '')
+    }
+  }
+  fileInput.value = ''
+  folderInput.value = ''
+  uploading = false
+  cancelRequested = false
+  activeXhr = null
+  setStopEnabled(false)
+  loadDrive()
+}
+
+function explainError(e) {
+  const raw = String((e && e.message) || e || '')
+  const m = raw.toLowerCase()
+  if (m.includes('скасовано') || m.includes('abort')) return 'скасовано'
+  if (m.includes('timeout')) return 'таймаут — WhatsApp не відповів вчасно'
+  if (m.includes('504')) return 'таймаут на сервері (WhatsApp довго відправляв)'
+  if (m.includes('503') || m.includes('not connected')) return 'WhatsApp не підключений (сесія розірвана, код 440)'
+  if (m.includes('connection closed') || m.includes('connection lost') || m.includes('closed'))
+    return 'зʼєднання з WhatsApp обірвалось'
+  if (m.includes('409') || m.includes('in progress')) return 'уже йде інше завантаження'
+  if (m.includes('reserved') || m.includes('internal name')) return 'зарезервована службова назва'
+  if (m.includes('empty')) return 'порожній файл (0 байт)'
+  if (m.includes('413') || m.includes('too large') || m.includes('payload')) return 'файл завеликий (ліміт 100 MB)'
+  if (m.includes('network')) return 'мережа: сервер недоступний'
+  if (m.includes('401') || m.includes('auth')) return 'не авторизовано (перевір токен)'
+  if (m.includes('500')) return 'внутрішня помилка сервера'
+  return raw || 'невідома помилка'
+}
+
+async function createFolder() {
+  const base = targetFolder.value || ''
+  const hint = base ? `${base}/nova` : 'docs'
+  const raw = prompt('Шлях нової папки:', hint)
+  if (raw == null) return
+  const path = String(raw).trim().replace(/^\/+|\/+$/g,'')
+  if (!path) return
   try {
-    const files = await fetch('/api/files').then(r => r.json())
-    table.innerHTML = ''
-    if (!files.length) { emptyMsg.style.display = 'block'; return }
-    emptyMsg.style.display = 'none'
-    files.forEach(f => table.innerHTML += `<tr>
-      <td>📄 ${f.name}</td>
-      <td class="size">${fmtSize(f.size)}</td>
-      <td style="color:#888">${f.mime || '-'}</td>
-    </tr>`)
-  } catch(e) { console.error(e) }
+    const r = await api('/api/mkdir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})})
+    const j = await r.json().catch(()=>({}))
+    if(!r.ok) throw new Error(j.error||r.statusText)
+    msg.className='okmsg'
+    msg.textContent = `Папка: ${j.path}` + (j.uploaded?' (і в WhatsApp)':' (лише каталог)')
+    loadDrive()
+  } catch(e){ msg.className='err'; msg.textContent='mkdir: '+e.message }
 }
 
-function fmtSize(bytes) {
-  if (!bytes) return '?'
-  const u = ['B','KB','MB','GB']
-  let i = 0
-  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++ }
-  return bytes.toFixed(1) + ' ' + u[i]
+async function deleteFile(id, path) {
+  if (!confirm(`Видалити з каталогу?\n${path}\n(у WhatsApp лишиться)`)) return
+  try {
+    const r = await api('/api/files/' + encodeURIComponent(id), { method: 'DELETE' })
+    const j = await r.json().catch(()=>({}))
+    if (!r.ok) throw new Error(j.error || r.statusText)
+    msg.className='okmsg'; msg.textContent = 'Видалено: ' + (j.path || id)
+    loadDrive()
+  } catch(e){ msg.className='err'; msg.textContent='delete: '+e.message }
 }
 
-loadFiles()
+async function renameFile(id, currentPath) {
+  const next = prompt('Новий шлях (можна перемістити в іншу папку):', currentPath)
+  if (next == null) return
+  const path = String(next).trim().replace(/^\/+|\/+$/g,'')
+  if (!path || path === currentPath) return
+  try {
+    const r = await api('/api/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, path })
+    })
+    const j = await r.json().catch(()=>({}))
+    if (!r.ok) throw new Error(j.error || r.statusText)
+    msg.className='okmsg'; msg.textContent = `Перейменовано → ${j.path}`
+    loadDrive()
+  } catch(e){ msg.className='err'; msg.textContent='rename: '+e.message }
+}
+
+async function deleteFolder(path) {
+  if (!confirm(`Видалити порожню папку?\n/${path}`)) return
+  try {
+    const r = await api('/api/folders', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path })
+    })
+    const j = await r.json().catch(()=>({}))
+    if (!r.ok) throw new Error(j.error || r.statusText)
+    msg.className='okmsg'; msg.textContent = 'Папку прибрано: /' + path
+    loadDrive()
+  } catch(e){ msg.className='err'; msg.textContent='rmdir: '+e.message }
+}
+
+async function moveFolder(fromPath) {
+  const base = fromPath.split('/').pop()
+  const next = prompt(
+    `Перемістити / перейменувати папку.\nВкажи новий повний шлях (з назвою):`,
+    fromPath
+  )
+  if (next == null) return
+  const to = String(next).trim().replace(/^\/+|\/+$/g, '')
+  if (!to || to === fromPath) return
+  if (to === fromPath || to.startsWith(fromPath + '/')) {
+    msg.className = 'err'; msg.textContent = 'Не можна перемістити папку в саму себе'
+    return
+  }
+  try {
+    const r = await api('/api/folders/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: fromPath, to })
+    })
+    const j = await r.json().catch(()=>({}))
+    if (!r.ok) throw new Error(j.error || r.statusText)
+    msg.className='okmsg'
+    msg.textContent = `Папку переміщено: /${fromPath} → /${j.to} (файлів: ${j.filesMoved})`
+    loadDrive()
+  } catch(e){ msg.className='err'; msg.textContent='move: '+e.message }
+}
+
+function filteredDrive(drive) {
+  if (!searchQ) return drive
+  const files = (drive.files || []).filter(f => {
+    const hay = `${f.path || ''} ${f.name || ''} ${f.folder || ''}`.toLowerCase()
+    return hay.includes(searchQ)
+  })
+  const folderSet = new Set([''])
+  for (const f of files) {
+    const parts = String(f.folder || '').split('/').filter(Boolean)
+    let cur = ''
+    for (const p of parts) {
+      cur = cur ? `${cur}/${p}` : p
+      folderSet.add(cur)
+    }
+  }
+  const folders = (drive.folders || []).filter(f => folderSet.has(f.path))
+  return { ...drive, files, folders }
+}
+
+function buildTree(drive) {
+  const root = { dirs: {}, files: [], meta: (drive.folders || []).find(f => f.path === '') || { fileCount: 0, totalSize: 0 }, path: '' }
+  const folderMap = Object.fromEntries((drive.folders || []).map(f => [f.path, f]))
+
+  function ensure(pathStr) {
+    if (!pathStr) return root
+    const parts = pathStr.split('/').filter(Boolean)
+    let node = root
+    let cur = ''
+    for (const p of parts) {
+      cur = cur ? `${cur}/${p}` : p
+      if (!node.dirs[p]) node.dirs[p] = { dirs: {}, files: [], meta: folderMap[cur] || { path: cur, fileCount: 0, totalSize: 0 }, path: cur }
+      node = node.dirs[p]
+      node.meta = folderMap[cur] || node.meta
+      node.path = cur
+    }
+    return node
+  }
+
+  for (const f of drive.folders || []) if (f.path) ensure(f.path)
+  for (const file of drive.files || []) ensure(file.folder || '').files.push(file)
+  return root
+}
+
+function parentPath(p) {
+  if (!p) return ''
+  const i = p.lastIndexOf('/')
+  return i < 0 ? '' : p.slice(0, i)
+}
+function baseName(p) {
+  if (!p) return '/'
+  const i = p.lastIndexOf('/')
+  return i < 0 ? p : p.slice(i + 1)
+}
+function nodeAt(tree, path) {
+  if (!path) return tree
+  let node = tree
+  for (const part of path.split('/').filter(Boolean)) {
+    if (!node.dirs[part]) return null
+    node = node.dirs[part]
+  }
+  return node
+}
+function entriesOf(node) {
+  if (!node) return []
+  const dirs = Object.keys(node.dirs).sort((a, b) => a.localeCompare(b, 'uk')).map(name => ({
+    kind: 'dir',
+    key: 'd:' + node.dirs[name].path,
+    name,
+    path: node.dirs[name].path,
+    meta: node.dirs[name].meta || {},
+    node: node.dirs[name]
+  }))
+  const files = [...node.files].sort((a, b) => String(a.name).localeCompare(String(b.name), 'uk')).map(f => ({
+    kind: 'file',
+    key: 'f:' + f.id,
+    name: f.name,
+    path: f.path || f.name,
+    file: f
+  }))
+  return dirs.concat(files)
+}
+function fileTypeClass(name) {
+  const e = String(name || '').split('.').pop().toLowerCase()
+  if (['png','jpg','jpeg','gif','webp','svg','bmp','heic'].includes(e)) return 't-img'
+  if (['mp4','mkv','mov','avi','webm','m4v'].includes(e)) return 't-vid'
+  if (['mp3','wav','flac','ogg','m4a','aac'].includes(e)) return 't-aud'
+  if (['zip','rar','7z','tar','gz','xz'].includes(e)) return 't-zip'
+  if (['js','ts','py','sh','json','html','css','c','cpp','java','go','rs','rb','php','nix'].includes(e)) return 't-code'
+  if (['pdf','doc','docx','odt','xls','xlsx','ppt','pptx'].includes(e)) return 't-doc'
+  return ''
+}
+function entryIcon(ent) {
+  if (ent.kind === 'dir') return '📁'
+  return fileIcon(ent.name)
+}
+function makeYaziRow(ent, { selected, isCwd, onClick, onDbl }) {
+  const row = document.createElement('div')
+  const cls = ['yazi-row']
+  if (ent.kind === 'dir') cls.push('t-dir')
+  else cls.push(fileTypeClass(ent.name) || 't-code')
+  if (selected) cls.push('sel')
+  if (isCwd) cls.push('cwd')
+  row.className = cls.join(' ')
+  row.dataset.key = ent.key
+  const meta = ent.kind === 'dir'
+    ? `${(ent.meta.fileCount || Object.keys(ent.node.dirs).length + ent.node.files.length) || 0}`
+    : fmtSize(ent.file.size)
+  row.innerHTML = `<span class="yazi-ico">${entryIcon(ent)}</span><span class="yazi-name">${escapeHtml(ent.name)}</span><span class="yazi-meta">${escapeHtml(meta)}</span>`
+  row.onclick = e => { e.stopPropagation(); onClick && onClick(ent) }
+  row.ondblclick = e => { e.stopPropagation(); onDbl && onDbl(ent) }
+  return row
+}
+
+function fillFolderSelect(folders) {
+  const cur = targetFolder.value
+  targetFolder.innerHTML = ''
+  const opts = [{path:'', name:'/ (корінь)'}].concat(
+    folders.filter(f=>f.path).map(f=>({path:f.path, name:'/' + f.path}))
+  )
+  for (const o of opts) {
+    const el=document.createElement('option')
+    el.value=o.path; el.textContent=o.name
+    targetFolder.appendChild(el)
+  }
+  targetFolder.value = opts.some(o=>o.path===cur) ? cur : ''
+}
+
+function renderPreview(ent, tree) {
+  yaziPrev.innerHTML = ''
+  if (!ent) {
+    yaziPrev.innerHTML = '<div class="yazi-empty">виділи файл або папку</div>'
+    return
+  }
+  if (ent.kind === 'dir') {
+    const kids = entriesOf(ent.node)
+    const head = document.createElement('div')
+    head.className = 'yazi-prev-head'
+    head.textContent = `/${ent.path || ''} · ${kids.length}`
+    yaziPrev.appendChild(head)
+    if (!kids.length) {
+      const emptyEl = document.createElement('div')
+      emptyEl.className = 'yazi-empty'
+      emptyEl.textContent = '(порожня папка)'
+      yaziPrev.appendChild(emptyEl)
+    } else {
+      for (const k of kids.slice(0, 80)) {
+        yaziPrev.appendChild(makeYaziRow(k, {
+          selected: false,
+          onClick: () => { selectedKey = k.key; if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; } persistNav(); renderDrive() },
+          onDbl: () => { if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; persistNav(); renderDrive() } }
+        }))
+      }
+      if (kids.length > 80) {
+        const more = document.createElement('div')
+        more.className = 'yazi-empty'
+        more.textContent = `…ще ${kids.length - 80}`
+        yaziPrev.appendChild(more)
+      }
+    }
+    const acts = document.createElement('div')
+    acts.className = 'yazi-prev-actions'
+    const open = document.createElement('button')
+    open.type = 'button'; open.className = 'btn'; open.textContent = 'Відкрити'
+    open.onclick = () => { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
+    acts.appendChild(open)
+    if (ent.path) {
+      const mv = document.createElement('button')
+      mv.type = 'button'; mv.className = 'btn secondary'; mv.textContent = '⇄ Move'
+      mv.onclick = () => moveFolder(ent.path)
+      acts.appendChild(mv)
+      if (!kids.length) {
+        const del = document.createElement('button')
+        del.type = 'button'; del.className = 'btn danger'; del.textContent = '🗑'
+        del.onclick = () => deleteFolder(ent.path)
+        acts.appendChild(del)
+      }
+    }
+    yaziPrev.appendChild(acts)
+    return
+  }
+  const f = ent.file
+  const head = document.createElement('div')
+  head.className = 'yazi-prev-head'
+  head.textContent = 'файл'
+  const body = document.createElement('div')
+  body.className = 'yazi-prev-body'
+  body.textContent = [
+    f.name,
+    '',
+    `шлях:  /${f.path || f.name}`,
+    `розмір: ${fmtSize(f.size)}`,
+    `mime:   ${f.mime || '—'}`,
+    `дата:   ${fmtDate(f.uploadedAt)}`,
+    `id:     ${f.id}`,
+    f.hasMedia ? 'медіа:  так (можна ↓)' : 'медіа:  немає в каталозі'
+  ].join('\n')
+  const acts = document.createElement('div')
+  acts.className = 'yazi-prev-actions'
+  if (f.hasMedia) {
+    const a = document.createElement('a')
+    a.className = 'btn'
+    a.href = `/api/download/${encodeURIComponent(f.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
+    a.textContent = '↓ Завантажити'
+    acts.appendChild(a)
+  }
+  const ren = document.createElement('button')
+  ren.type = 'button'; ren.className = 'btn secondary'; ren.textContent = '✎ Rename'
+  ren.onclick = () => renameFile(f.id, f.path || f.name)
+  acts.appendChild(ren)
+  const del = document.createElement('button')
+  del.type = 'button'; del.className = 'btn danger'; del.textContent = '🗑'
+  del.onclick = () => deleteFile(f.id, f.path || f.name)
+  acts.appendChild(del)
+  yaziPrev.appendChild(head)
+  yaziPrev.appendChild(body)
+  yaziPrev.appendChild(acts)
+}
+
+function renderDrive() {
+  const drive = filteredDrive(driveState)
+  fillFolderSelect(driveState.folders || [])
+  statsEl.innerHTML = `
+    <span>папок: <b>${driveState.stats?.folders ?? 0}</b></span>
+    <span>файлів: <b>${driveState.stats?.files ?? 0}</b></span>
+    <span>обʼєм: <b>${fmtSize(driveState.stats?.totalSize || 0)}</b></span>
+    <span>оновлено: <b>${fmtDate(driveState.updatedAt)}</b></span>
+    ${searchQ ? `<span>знайдено: <b>${(drive.files || []).length}</b></span>` : ''}`
+
+  const tree = buildTree(drive)
+  // if cwd vanished after move/delete, climb up
+  while (cwd && !nodeAt(tree, cwd)) cwd = parentPath(cwd)
+  const cur = nodeAt(tree, cwd) || tree
+  const mainEntries = entriesOf(cur)
+
+  // search mode: flat list in main
+  let list = mainEntries
+  if (searchQ) {
+    list = (drive.files || []).map(f => ({
+      kind: 'file', key: 'f:' + f.id, name: f.name, path: f.path || f.name, file: f
+    })).concat(
+      (drive.folders || []).filter(f => f.path && f.path.toLowerCase().includes(searchQ)).map(f => {
+        const n = nodeAt(tree, f.path)
+        return { kind: 'dir', key: 'd:' + f.path, name: baseName(f.path), path: f.path, meta: f, node: n }
+      })
+    )
+  }
+
+  if (!selectedKey || !list.some(e => e.key === selectedKey)) {
+    selectedKey = list[0] ? list[0].key : ''
+  }
+  const selected = list.find(e => e.key === selectedKey) || null
+  persistNav()
+
+  yaziPath.textContent = '/' + (cwd || '') + (cwd ? '/' : '')
+  yaziParent.innerHTML = ''
+  yaziMain.innerHTML = ''
+
+  // left: parent siblings (or root listing when at root)
+  const par = parentPath(cwd)
+  const parentNode = nodeAt(tree, par) || tree
+  const parentEntries = entriesOf(parentNode).filter(e => e.kind === 'dir')
+  if (cwd) {
+    const up = document.createElement('div')
+    up.className = 'yazi-row'
+    up.innerHTML = `<span class="yazi-ico">‥</span><span class="yazi-name">..</span>`
+    up.onclick = () => { cwd = par; selectedKey = 'd:' + cwd; persistNav(); renderDrive() }
+    yaziParent.appendChild(up)
+  }
+  if (!parentEntries.length && !cwd) {
+    yaziParent.innerHTML = '<div class="yazi-empty">/</div>'
+  }
+  for (const ent of parentEntries) {
+    yaziParent.appendChild(makeYaziRow(ent, {
+      selected: false,
+      isCwd: ent.path === cwd,
+      onClick: () => { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() },
+      onDbl: () => { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
+    }))
+  }
+
+  // middle
+  if (!list.length) {
+    yaziMain.innerHTML = `<div class="yazi-empty">${searchQ ? 'нічого не знайдено' : '(порожньо)'}</div>`
+    empty.style.display = 'none'
+  } else {
+    empty.style.display = 'none'
+    for (const ent of list) {
+      yaziMain.appendChild(makeYaziRow(ent, {
+        selected: ent.key === selectedKey,
+        onClick: () => { selectedKey = ent.key; persistNav(); renderDrive() },
+        onDbl: () => {
+          if (ent.kind === 'dir') { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
+          else if (ent.file?.hasMedia) {
+            location.href = `/api/download/${encodeURIComponent(ent.file.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
+          }
+        }
+      }))
+    }
+  }
+
+  renderPreview(selected, tree)
+
+  const dirs = list.filter(e => e.kind === 'dir').length
+  const files = list.filter(e => e.kind === 'file').length
+  yaziFoot.innerHTML = `<span>📁 <b>${dirs}</b></span><span>📄 <b>${files}</b></span>` +
+    (selected ? `<span>▸ <b>${escapeHtml(selected.name)}</b></span>` : '') +
+    `<span style="margin-left:auto;opacity:.7">Enter / dblclick · ←↑↓→</span>`
+}
+
+// keyboard like a TUI file manager
+document.addEventListener('keydown', e => {
+  if (uploading || scanning) return
+  if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return
+  const drive = filteredDrive(driveState)
+  const tree = buildTree(drive)
+  const cur = nodeAt(tree, cwd) || tree
+  let list = entriesOf(cur)
+  if (searchQ) return
+  const idx = Math.max(0, list.findIndex(x => x.key === selectedKey))
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (!list.length) return
+    selectedKey = list[Math.min(list.length - 1, idx + 1)].key
+    persistNav(); renderDrive()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (!list.length) return
+    selectedKey = list[Math.max(0, idx - 1)].key
+    persistNav(); renderDrive()
+  } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+    e.preventDefault()
+    const ent = list[idx]
+    if (ent?.kind === 'dir') { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
+  } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+    e.preventDefault()
+    if (!cwd) return
+    const was = cwd
+    cwd = parentPath(cwd)
+    selectedKey = 'd:' + was
+    persistNav(); renderDrive()
+  }
+})
+
+async function refreshStatus() {
+  try {
+    const s = await api('/api/status').then(r=>r.json())
+    if (s.token) {
+      API_TOKEN = s.token
+      localStorage.setItem('ws_token', API_TOKEN)
+    }
+    const on=!!(s.connected||s.c)
+    badge.textContent=on?'online':'offline'
+    badge.className='status '+(on?'on':'off')
+  } catch { badge.textContent='down'; badge.className='status off' }
+}
+
+async function loadDrive() {
+  try {
+    await refreshStatus()
+    const r = await api('/api/drive')
+    if (!r.ok) throw new Error('drive ' + r.status)
+    driveState = await r.json()
+    renderDrive()
+  } catch(e){ msg.className='err'; msg.textContent=String(e.message||e) }
+}
+
+refreshStatus().then(loadDrive)
+setInterval(refreshStatus, 5000)
+setInterval(()=>{ if(!uploading) loadDrive() }, 10000)
 </script>
-</body></html>
+</body>
+</html>

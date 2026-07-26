@@ -1,3 +1,14 @@
 auth/
 node_modules/
 files_cache.json
+tmp/
+uploads/
+group_id.txt
+*.log
+folders.json
+drive-config.json
+app-config.json
+logs/
+WatCurs
+WatDeep
+WatDeepCor
