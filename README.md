@@ -14,7 +14,8 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Baileys-WhatsApp-25D366?style=flat-square&logo=whatsapp&logoColor=white" alt="Baileys">
   <img src="https://img.shields.io/badge/UI-localhost%3A3000-0ea5e9?style=flat-square" alt="UI">
-  <img src="https://img.shields.io/badge/version-0.3.0-25D366?style=flat-square" alt="0.3.0">
+  <img src="https://img.shields.io/badge/version-0.3.1-25D366?style=flat-square" alt="0.3.1">
+  <img src="https://img.shields.io/badge/Termux-Android-000000?style=flat-square&logo=android&logoColor=white" alt="Termux">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT">
 </p>
 
@@ -44,12 +45,35 @@ WhatsApp уже вміє тримати медіа. WattSapDrive додає зв
 | **Швидкості** | інтернет + WhatsApp ↑/↓, LIVE під час transfer |
 | **Профіль** | аватар, номер, група, публічний IP |
 | **Організація** | mkdir, rename/move файлів і папок, delete з каталогу |
+| **Мульти-пристрій** | ПК + Termux: спільна група + експорт/імпорт каталогу |
 | **Захист** | Bearer-токен на `/api/*` (автогенерація при install) |
-| **QR логін** | `/qr` → Linked Devices у WhatsApp |
+| **Привʼязка** | `/pair` — код з телефону (Termux) · `/qr` — з другого екрана |
 
 > Delete / rename змінюють **каталог** (`drive-config.json`). Повідомлення в WhatsApp лишаються.
 
-## Встановлення на новій машині
+## Termux (Android)
+
+Повна інструкція: **[TERMUX.md](./TERMUX.md)**
+
+```bash
+pkg update -y && pkg install -y git nodejs
+git clone https://github.com/xsilofon-dev/wattsapdrive.git
+cd wattsapdrive
+bash install-termux.sh
+# або зі своєю назвою:
+# VAULT_NAME="Мій Диск" bash install-termux.sh
+```
+
+Далі: **http://127.0.0.1:3000/pair** → код → WhatsApp → *Привʼязати за номером*.  
+**Не тисни QR** на тому ж телефоні.
+
+Оновлення:
+
+```bash
+cd ~/wattsapdrive && git pull && bash install-termux.sh
+```
+
+## Встановлення на ПК / Linux
 
 Потрібен **Node.js 18+**.
 
@@ -58,30 +82,26 @@ git clone https://github.com/xsilofon-dev/wattsapdrive.git
 cd wattsapdrive
 chmod +x install.sh
 ./install.sh
+# VAULT_NAME="Мій Диск" ./install.sh
 ```
 
-Інсталятор зробить:
+Інсталятор:
 
 1. `npm install`
-2. згенерує `app-config.json` з випадковим токеном
-3. створить порожній `drive-config.json`
-4. поставить **systemd user** сервіс `wattsapdrive` і запустить його
-5. увімкне linger (щоб сервіс жив після logout), якщо можливо
+2. назва сховища (`VAULT_NAME` або питання)
+3. `app-config.json` з токеном + порожній каталог
+4. systemd user service (якщо є)
+5. linger (опційно)
 
 Потім:
 
-1. Відкрий **http://127.0.0.1:3000/qr** → WhatsApp → **Linked devices** → скануй QR  
-2. UI: **http://127.0.0.1:3000** (Ctrl+Shift+R якщо бачиш старий UI)  
-3. Токен — у виводі інсталятора або в `app-config.json` (не коміть)
+1. **/pair** (телефон) або **/qr** (другий екран)
+2. у UI обери/створи **групу-сховище**
+3. UI: **http://127.0.0.1:3000**
 
-Без systemd:
+Без systemd: `npm install && npm start`
 
-```bash
-npm install
-npm start
-```
-
-### Керування сервісом
+### Керування сервісом (ПК)
 
 ```bash
 systemctl --user status wattsapdrive
@@ -89,30 +109,33 @@ systemctl --user restart wattsapdrive
 journalctl --user -u wattsapdrive -f
 ```
 
+## Той самий акаунт, різні пристрої
+
+1. На кожному пристрої — **окремий** `/pair` (не копіюй `auth/`)
+2. Обери **ту саму групу**
+3. Дерево папок: на одному **↧ Каталог** → на іншому **↥ Імпорт**
+
 ## API (коротко)
 
 ```bash
-# статус (без токена) — профіль, IP, швидкості
 curl http://127.0.0.1:3000/api/status
 
-# каталог
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   http://127.0.0.1:3000/api/drive
 
-# upload (файли >95MB — через UI чанкуються самі)
 curl -X POST http://127.0.0.1:3000/api/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "x-file-name: notes/hello.txt" \
   --data-binary @hello.txt
 
-# download
 curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
   http://127.0.0.1:3000/api/download/MESSAGE_ID
 ```
 
 Також: `POST /api/mkdir`, `POST /api/rename`, `POST /api/folders/move`,  
 `DELETE /api/files/:id`, `DELETE /api/folders`, `POST /api/upload-chunk`,  
-`GET|POST /api/speedtest`.
+`GET|POST /api/speedtest`, `GET /api/groups`, `POST /api/groups/select|create`,  
+`GET /api/catalog/export`, `POST /api/catalog/import`.
 
 ## Стек
 
@@ -126,8 +149,8 @@ curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
 
 ## Важливо знати
 
-- Це **немагічний безлімітний Google Drive**. Ліміти WhatsApp (розмір медіа, сесія Linked Devices) лишаються.
-- Не тримай одночасно WhatsApp Desktop і бота на одній сесії — буде конфлікт **440**.
+- Це **немагічний безлімітний Google Drive**. Ліміти WhatsApp лишаються.
+- Не тримай WhatsApp Desktop + бот на одній скопійованій `auth/` — конфлікт **440**.
 - Не коміть `auth/`, `app-config.json`, токени, логи, `drive-config.json`.
 
 ## Contributors
