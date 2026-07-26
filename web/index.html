@@ -337,6 +337,10 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
     <input class="search" id="search" placeholder="Пошук…" style="flex:1;min-width:140px">
     <button type="button" class="btn secondary" id="btnMkdir2">+ Папка</button>
     <button type="button" class="btn secondary" id="btnRefresh">Оновити</button>
+    <button type="button" class="btn secondary" id="btnExport" title="Завантажити каталог (дерево) як файл — щоб перенести на інший пристрій">↧ Каталог</button>
+    <button type="button" class="btn secondary" id="btnImport" title="Відновити каталог з файлу (з іншого пристрою)">↥ Імпорт</button>
+    <input type="file" id="catalogInput" accept="application/json,.json" style="display:none">
+    <a id="dlAnchor" style="display:none"></a>
   </div>
   <div class="yazi-path" id="yaziPath">/</div>
   <div class="yazi" id="tree">
@@ -484,6 +488,46 @@ document.getElementById('btnFolder').onclick = e => { e.stopPropagation(); pickF
 document.getElementById('btnMkdir').onclick = e => { e.stopPropagation(); createFolder() }
 document.getElementById('btnMkdir2').onclick = () => createFolder()
 document.getElementById('btnRefresh').onclick = () => loadDrive()
+
+document.getElementById('btnExport').onclick = async () => {
+  try {
+    const r = await api('/api/catalog/export')
+    if (!r.ok) throw new Error('export ' + r.status)
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.getElementById('dlAnchor')
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    a.href = url
+    a.download = 'wsd-catalog-' + stamp + '.json'
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 20000)
+    msg.className = 'okmsg'; msg.textContent = 'Каталог завантажено — перенеси файл на інший пристрій і натисни «Імпорт».'
+  } catch (e) { msg.className = 'err'; msg.textContent = 'export: ' + (e.message || e) }
+}
+
+document.getElementById('btnImport').onclick = () => document.getElementById('catalogInput').click()
+document.getElementById('catalogInput').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0]
+  e.target.value = ''
+  if (!file) return
+  let data
+  try { data = JSON.parse(await file.text()) }
+  catch { msg.className = 'err'; msg.textContent = 'Не JSON-файл каталогу'; return }
+  const replace = confirm('OK = обʼєднати з поточним каталогом\nСкасувати = замінити повністю')
+  const mode = replace ? 'merge' : 'replace'
+  try {
+    const r = await api('/api/catalog/import?mode=' + mode, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || r.status)
+    msg.className = 'okmsg'
+    msg.textContent = `Імпортовано (${j.mode}): +${j.added || 0}, всього файлів ${j.totalFiles}`
+    loadDrive()
+  } catch (e) { msg.className = 'err'; msg.textContent = 'import: ' + (e.message || e) }
+})
 searchEl.oninput = () => { searchQ = searchEl.value.trim().toLowerCase(); renderDrive() }
 dropzone.onclick = e => { if (!e.target.closest('button,select,label,.field')) fileInput.click() }
 

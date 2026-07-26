@@ -760,6 +760,64 @@ app.post('/api/vault', express.json({ limit: '8kb' }), (req, res) => {
   res.json({ ok: true, vault: { name } })
 })
 
+// —— Catalog sync between devices (same account) ——
+// Files already live in the shared group; only drive-config.json is per-device.
+app.get('/api/catalog/export', (req, res) => {
+  const drive = readDrive()
+  drive.exportedAt = new Date().toISOString()
+  drive.vault = vaultName()
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Content-Disposition', `attachment; filename="wsd-catalog-${stamp}.json"`)
+  res.send(JSON.stringify(drive, null, 2))
+})
+
+app.post('/api/catalog/import', express.json({ limit: '64mb' }), (req, res) => {
+  const incoming = req.body
+  if (!isCatalogShape(incoming)) {
+    return res.status(400).json({ error: 'Це не файл каталогу WattSapDrive (потрібні files+folders)' })
+  }
+  const mode = String(req.query.mode || req.body?.mode || 'merge')
+  const cur = readDrive()
+  let added = 0
+  let result
+  if (mode === 'replace') {
+    result = incoming
+  } else {
+    // merge: keep both, incoming wins on same id
+    result = cur
+    for (const [id, f] of Object.entries(incoming.files || {})) {
+      if (!result.files[id]) added++
+      result.files[id] = f
+    }
+    for (const [key, folder] of Object.entries(incoming.folders || {})) {
+      if (!result.folders[key]) result.folders[key] = folder
+    }
+  }
+  result.updatedAt = new Date().toISOString()
+  writeDrive(result)
+  const totalFiles = Object.keys(result.files || {}).length
+  res.json({ ok: true, mode, added, totalFiles })
+})
+
+// Push a backup copy of the catalog into the vault group (off-device copy).
+app.post('/api/catalog/push', async (req, res) => {
+  if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
+  const jid = targetJid()
+  if (!jid) return res.status(503).json({ error: 'Спершу обери групу-сховище' })
+  try {
+    const drive = readDrive()
+    drive.exportedAt = new Date().toISOString()
+    drive.vault = vaultName()
+    const buf = Buffer.from(JSON.stringify(drive, null, 2))
+    const fileName = `.ws/wsd-catalog.json`
+    const sent = await sendWaDocument(jid, buf, fileName, 'application/json')
+    res.json({ ok: true, id: sent?.key?.id || null, size: buf.length, files: Object.keys(drive.files || {}).length })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.get('/api/avatar', (req, res) => {
   if (!profileCache.avatarBuf) return res.status(404).json({ error: 'no avatar' })
   res.setHeader('Content-Type', profileCache.avatarMime || 'image/jpeg')
