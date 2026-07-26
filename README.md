@@ -37,9 +37,10 @@ WhatsApp уже вміє тримати медіа. WattSapDrive додає зв
 
 | | |
 |---|---|
-| **Веб-диск** | дерево папок, drag-and-drop, upload цілої теки |
-| **Пошук** | за назвою або шляхом |
-| **Організація** | mkdir, rename / move, delete з каталогу |
+| **Веб-диск** | 3-панельний браузер у стилі [Yazi](https://yazi-rs.github.io/) (батько / тека / превʼю) |
+| **Навігація** | `↑↓←→`, Enter, dblclick · кольори за типом файлу |
+| **Upload** | drag-and-drop, ціла тека, прогрес (швидкість / ETA), Стоп, retry |
+| **Організація** | mkdir, rename / move файлів і папок, delete з каталогу |
 | **Захист** | Bearer-токен на `/api/*` |
 | **QR логін** | `/qr` → Linked Devices у WhatsApp |
 
