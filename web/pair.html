@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<title>WattSapDrive — привʼязка</title>
+<style>
+:root{
+  --bg:#0e1116; --card:#161b22; --line:#2a3340; --txt:#e6edf3;
+  --muted:#8b949e; --wa:#25D366; --warn:#fbbf24; --danger:#f8737f;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:system-ui,-apple-system,sans-serif;
+  background:radial-gradient(900px 500px at 80% -10%,#12321f33,transparent),var(--bg);
+  color:var(--txt); display:flex; justify-content:center; padding:20px 14px 40px;
+}
+.wrap{width:min(520px,100%)}
+h1{font-size:1.35rem;margin:0 0 6px}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 16px;line-height:1.45}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.75rem;font-weight:700}
+.badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.on{background:#25D36622;color:var(--wa)}.off{background:#f8737f22;color:var(--danger)}
+label{display:block;font-size:.78rem;color:var(--muted);margin:12px 0 6px}
+input{
+  width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);
+  background:#0d1117;color:var(--txt);font-size:1.05rem
+}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button,.btn{
+  appearance:none;background:var(--wa);color:#04140b;border:0;border-radius:12px;
+  padding:13px 16px;font-weight:700;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:.95rem;flex:1;min-width:140px
+}
+button.secondary,.btn.secondary{background:#232b36;color:var(--txt);border:1px solid var(--line)}
+button:disabled{opacity:.5}
+.code-box{
+  margin-top:14px;padding:16px 10px;border-radius:14px;border:1px dashed #2f6f4a;
+  background:#0b1510;text-align:center
+}
+.code{
+  font-size:clamp(1.8rem,8vw,2.6rem);letter-spacing:.22em;font-weight:800;
+  font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--wa);user-select:all
+}
+.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:.88rem;line-height:1.55}
+.hint{font-size:.8rem;color:var(--muted);margin-top:10px;line-height:1.45}
+.warnbox{background:#2a2210;border:1px solid #5a4518;color:#f5d78a;border-radius:12px;padding:12px;font-size:.86rem;line-height:1.45;margin-bottom:12px}
+#qrCard{display:none}
+#qrBox{display:flex;justify-content:center;padding:10px;background:#fff;border-radius:12px;min-height:180px;align-items:center}
+#qrBox svg{width:200px;height:200px}
+details{margin-top:8px}
+details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+.okmsg{color:var(--wa)}.errmsg{color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>☁ Привʼязка WhatsApp</h1>
+  <p class="sub">На телефоні / Termux <b>не тисни QR</b> — він не відкриє WhatsApp. Потрібен <b>код з цифр</b>.</p>
+
+  <div class="warnbox" id="mobileTip">
+    Termux / телефон: введи номер → «Отримати код» → у WhatsApp обери
+    <b>«Привʼязати за номером телефону»</b> і впиши код. QR лишай лише якщо є другий екран.
+  </div>
+
+  <div class="card">
+    <span id="st" class="badge off">перевіряю…</span>
+    <p id="msg" class="hint"></p>
+  </div>
+
+  <div class="card" id="pairCard">
+    <h2 style="margin:0;font-size:1.05rem">Код для телефону</h2>
+    <ol class="steps">
+      <li>Введи свій номер з кодом країни</li>
+      <li>Натисни <b>Отримати код</b></li>
+      <li>Відкрий WhatsApp → <b>⋮ / Налаштування → Повʼязані пристрої → Привʼязати пристрій</b></li>
+      <li>Внизу: <b>Привʼязати за номером телефону</b></li>
+      <li>Введи код з цього екрана</li>
+    </ol>
+
+    <label for="phone">Номер WhatsApp</label>
+    <input id="phone" inputmode="numeric" autocomplete="tel" placeholder="380XXXXXXXXX">
+
+    <div class="row">
+      <button type="button" id="btnPair">Отримати код</button>
+      <button type="button" class="secondary" id="btnWa">Відкрити WhatsApp</button>
+    </div>
+    <div class="row">
+      <a class="btn secondary" href="/">← На диск</a>
+      <button type="button" class="secondary" id="btnCopy" hidden>Скопіювати код</button>
+    </div>
+
+    <div class="code-box" id="codeWrap" hidden>
+      <div class="code" id="code">········</div>
+      <p class="hint" id="codeHint">Код живе кілька хвилин. Після введення статус стане online.</p>
+    </div>
+  </div>
+
+  <div class="card" id="qrCard">
+    <details>
+      <summary>QR (лише якщо є другий екран / ПК)</summary>
+      <div id="qrBox" style="margin-top:12px">немає QR</div>
+      <p class="hint">На тому ж телефоні QR сканувати не вийде — камера не «бачить» власний екран через тап.</p>
+    </details>
+  </div>
+</div>
+<script>
+const phoneEl = document.getElementById('phone')
+const codeWrap = document.getElementById('codeWrap')
+const codeEl = document.getElementById('code')
+const btnCopy = document.getElementById('btnCopy')
+const btnPair = document.getElementById('btnPair')
+const st = document.getElementById('st')
+const msg = document.getElementById('msg')
+const qrCard = document.getElementById('qrCard')
+const isMobile = matchMedia('(pointer:coarse)').matches || /Android|iPhone|Mobile|Termux/i.test(navigator.userAgent)
+if (!isMobile) qrCard.style.display = 'block'
+else qrCard.style.display = 'block' // collapsed details only
+
+const saved = localStorage.getItem('ws_phone') || ''
+if (saved) phoneEl.value = saved
+
+function onlyDigits(s){ return String(s||'').replace(/\D/g,'') }
+
+async function refresh(){
+  try{
+    const s = await fetch('/api/status').then(r => r.json())
+    const hint = (s.pair && s.pair.phone) || ''
+    if (hint && !phoneEl.value) phoneEl.value = hint
+    if (s.me && s.me.phone && !phoneEl.value) phoneEl.value = onlyDigits(s.me.phone)
+
+    if (s.connected){
+      st.textContent = 'online · привʼязано'
+      st.className = 'badge on'
+      msg.innerHTML = 'Готово. <a href="/" style="color:#25D366">Відкрити диск →</a>'
+      codeWrap.hidden = true
+      btnCopy.hidden = true
+      document.getElementById('qrBox').textContent = 'вже linked'
+      return
+    }
+
+    st.textContent = 'чекаю привʼязку'
+    st.className = 'badge off'
+    msg.textContent = 'Бот онлайн, WhatsApp ще не linked.'
+
+    if (s.pair && s.pair.code){
+      codeWrap.hidden = false
+      codeEl.textContent = s.pair.code
+      btnCopy.hidden = false
+    }
+    if (s.pair && s.pair.hasQr){
+      const svg = await fetch('/qr.svg').then(r => r.ok ? r.text() : '')
+      document.getElementById('qrBox').innerHTML = svg || 'генерую QR…'
+    }
+  } catch(e){
+    st.textContent = 'down'
+    msg.textContent = String(e.message || e)
+  }
+}
+
+btnPair.onclick = async () => {
+  const phone = onlyDigits(phoneEl.value)
+  if (phone.length < 10){
+    msg.className = 'hint errmsg'
+    msg.textContent = 'Вкажи повний номер з кодом країни, напр. 380639692862'
+    return
+  }
+  localStorage.setItem('ws_phone', phone)
+  btnPair.disabled = true
+  msg.className = 'hint'
+  msg.textContent = 'Запитую код у WhatsApp…'
+  try{
+    const r = await fetch('/api/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status))
+    codeWrap.hidden = false
+    codeEl.textContent = j.code
+    btnCopy.hidden = false
+    msg.className = 'hint okmsg'
+    msg.textContent = 'Код готовий. Відкрий WhatsApp → Привʼязати за номером телефону.'
+  } catch(e){
+    msg.className = 'hint errmsg'
+    msg.textContent = String(e.message || e)
+  } finally {
+    btnPair.disabled = false
+    refresh()
+  }
+}
+
+btnCopy.onclick = async () => {
+  const raw = onlyDigits(codeEl.textContent)
+  try{
+    await navigator.clipboard.writeText(raw)
+    msg.className = 'hint okmsg'
+    msg.textContent = 'Скопійовано: ' + raw
+  } catch{
+    msg.textContent = 'Скопіюй код вручну: ' + raw
+  }
+}
+
+document.getElementById('btnWa').onclick = () => {
+  // Opens WhatsApp app; user still taps Linked devices manually (no public deep-link).
+  const targets = [
+    'intent://com.whatsapp/#Intent;scheme=whatsapp;package=com.whatsapp;end',
+    'whatsapp://',
+    'https://wa.me/'
+  ]
+  location.href = targets[0]
+  setTimeout(() => { location.href = targets[1] }, 400)
+}
+
+refresh()
+setInterval(refresh, 2500)
+</script>
+</body>
+</html>
