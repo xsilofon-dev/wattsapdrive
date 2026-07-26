@@ -1,0 +1,6 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>WattSapDrive QR</title>
+<style>body{background:#0f0f14;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}svg{width:300px;height:300px}</style></head>
+<body><div id="qr"></div>
+<script>
+setInterval(()=>{fetch('/qr-raw').then(r=>r.text()).then(svg=>{if(svg)document.getElementById('qr').innerHTML=svg})},3000)
+</script></body></html>

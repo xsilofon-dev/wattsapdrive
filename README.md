@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Baileys-WhatsApp-25D366?style=flat-square&logo=whatsapp&logoColor=white" alt="Baileys">
   <img src="https://img.shields.io/badge/UI-localhost%3A3000-0ea5e9?style=flat-square" alt="UI">
+  <img src="https://img.shields.io/badge/version-0.3.0-25D366?style=flat-square" alt="0.3.0">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT">
 </p>
 
@@ -37,41 +38,68 @@ WhatsApp уже вміє тримати медіа. WattSapDrive додає зв
 
 | | |
 |---|---|
-| **Веб-диск** | 3-панельний браузер у стилі [Yazi](https://yazi-rs.github.io/) (батько / тека / превʼю) |
-| **Навігація** | `↑↓←→`, Enter, dblclick · кольори за типом файлу |
-| **Upload** | drag-and-drop, ціла тека, прогрес (швидкість / ETA), Стоп, retry |
-| **Організація** | mkdir, rename / move файлів і папок, delete з каталогу |
-| **Захист** | Bearer-токен на `/api/*` |
+| **Веб-диск (Yazi)** | 3 панелі: батько / поточна / прев’ю |
+| **Заливка** | файли, цілі папки, drag-and-drop, Stop, retry |
+| **Чанки** | файли &gt;95 MB ріжуться автоматично (~100 MB ліміт WA) |
+| **Швидкості** | інтернет + WhatsApp ↑/↓, LIVE під час transfer |
+| **Профіль** | аватар, номер, група, публічний IP |
+| **Організація** | mkdir, rename/move файлів і папок, delete з каталогу |
+| **Захист** | Bearer-токен на `/api/*` (автогенерація при install) |
 | **QR логін** | `/qr` → Linked Devices у WhatsApp |
 
 > Delete / rename змінюють **каталог** (`drive-config.json`). Повідомлення в WhatsApp лишаються.
 
-## Швидкий старт
+## Встановлення на новій машині
+
+Потрібен **Node.js 18+**.
 
 ```bash
 git clone https://github.com/xsilofon-dev/wattsapdrive.git
 cd wattsapdrive
-npm install
-node src/bot.js
+chmod +x install.sh
+./install.sh
 ```
 
-1. Відкрий [http://127.0.0.1:3000/qr](http://127.0.0.1:3000/qr) і відскануй QR у WhatsApp → **Linked devices**.
-2. UI: [http://127.0.0.1:3000](http://127.0.0.1:3000)
-3. Токен з’явиться в статусі / `app-config.json` (не коміть його).
+Інсталятор зробить:
 
-Опційно: `./install.sh` поставить systemd user unit.
+1. `npm install`
+2. згенерує `app-config.json` з випадковим токеном
+3. створить порожній `drive-config.json`
+4. поставить **systemd user** сервіс `wattsapdrive` і запустить його
+5. увімкне linger (щоб сервіс жив після logout), якщо можливо
+
+Потім:
+
+1. Відкрий **http://127.0.0.1:3000/qr** → WhatsApp → **Linked devices** → скануй QR  
+2. UI: **http://127.0.0.1:3000** (Ctrl+Shift+R якщо бачиш старий UI)  
+3. Токен — у виводі інсталятора або в `app-config.json` (не коміть)
+
+Без systemd:
+
+```bash
+npm install
+npm start
+```
+
+### Керування сервісом
+
+```bash
+systemctl --user status wattsapdrive
+systemctl --user restart wattsapdrive
+journalctl --user -u wattsapdrive -f
+```
 
 ## API (коротко)
 
 ```bash
-# статус (без токена)
+# статус (без токена) — профіль, IP, швидкості
 curl http://127.0.0.1:3000/api/status
 
 # каталог
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   http://127.0.0.1:3000/api/drive
 
-# upload
+# upload (файли >95MB — через UI чанкуються самі)
 curl -X POST http://127.0.0.1:3000/api/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "x-file-name: notes/hello.txt" \
@@ -82,7 +110,9 @@ curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
   http://127.0.0.1:3000/api/download/MESSAGE_ID
 ```
 
-Також: `POST /api/mkdir`, `POST /api/rename`, `DELETE /api/files/:id`, `DELETE /api/folders`.
+Також: `POST /api/mkdir`, `POST /api/rename`, `POST /api/folders/move`,  
+`DELETE /api/files/:id`, `DELETE /api/folders`, `POST /api/upload-chunk`,  
+`GET|POST /api/speedtest`.
 
 ## Стек
 
@@ -98,7 +128,7 @@ curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
 
 - Це **немагічний безлімітний Google Drive**. Ліміти WhatsApp (розмір медіа, сесія Linked Devices) лишаються.
 - Не тримай одночасно WhatsApp Desktop і бота на одній сесії — буде конфлікт **440**.
-- Не коміть `auth/`, `app-config.json`, токени, логи.
+- Не коміть `auth/`, `app-config.json`, токени, логи, `drive-config.json`.
 
 ## Contributors
 
@@ -121,9 +151,3 @@ curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
   ·
   <a href="https://github.com/Kilo-Org"><b>Kilo Code</b></a>
 </p>
-
-Детальніше: [CONTRIBUTORS.md](CONTRIBUTORS.md)
-
-## Ліцензія
-
-MIT

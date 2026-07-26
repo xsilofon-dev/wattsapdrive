@@ -105,6 +105,47 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 #empty{text-align:center;color:var(--muted-2);padding:26px}
 .hint{color:var(--muted-2);font-size:.75rem;margin-top:8px}
 .hint code{background:#ffffff0d;padding:1px 5px;border-radius:5px}
+/* —— network / profile widget —— */
+.net-widget{padding:14px 16px}
+.net-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.net-av{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#1a2330;border:2px solid #2f6f4a;flex-shrink:0}
+.net-av.ph{display:grid;place-items:center;font-size:1.4rem;color:var(--muted)}
+.net-who{flex:1;min-width:140px}
+.net-phone{font-weight:700;font-size:1.05rem;letter-spacing:.01em}
+.net-name{color:var(--muted);font-size:.8rem;margin-top:2px}
+.net-group{color:#7ee787;font-size:.82rem;margin-top:3px;font-family:ui-monospace,monospace}
+.net-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:900px){.net-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.net-grid{grid-template-columns:1fr}}
+.net-cell{
+  position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#121820 0%,#0d1218 100%);
+  border:1px solid var(--line);border-radius:12px;padding:12px 12px 10px;
+  min-height:92px;display:flex;flex-direction:column;gap:4px
+}
+.net-cell::before{
+  content:'';position:absolute;inset:0 auto auto 0;width:100%;height:2px;
+  background:var(--accent,#2f6f4a);opacity:.85
+}
+.net-cell.ip{--accent:#38bdf8}
+.net-cell.idin{--accent:#22d3ee}
+.net-cell.iup{--accent:#a78bfa}
+.net-cell.wup{--accent:#25D366}
+.net-cell.wdn{--accent:#fbbf24}
+.net-cell .k{display:flex;align-items:center;gap:6px;color:var(--muted-2);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.net-cell .k .ico{font-size:.9rem;line-height:1;opacity:.9}
+.net-val{display:flex;align-items:baseline;gap:5px;margin-top:2px;min-height:1.6em}
+.net-num{font-size:1.35rem;font-weight:780;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.net-unit{font-size:.72rem;color:var(--muted);font-weight:600}
+.net-cell .sub2{color:var(--muted-2);font-size:.68rem;margin-top:auto;font-weight:400;line-height:1.3}
+.net-meter{height:4px;border-radius:99px;background:#1a222c;margin-top:6px;overflow:hidden}
+.net-meter>i{display:block;height:100%;width:0;border-radius:99px;background:var(--accent,#2f6f4a);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.net-tier{display:inline-block;margin-left:auto;font-size:.62rem;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:99px;background:#ffffff0d;color:var(--muted)}
+.net-tier.fast{color:#04140b;background:#25D366}
+.net-tier.ok{color:#fbbf24;background:#fbbf2418}
+.net-tier.slow{color:#f8737f;background:#f8737f18}
+.net-tier.wait{color:var(--muted-2)}
+.net-ip .net-num{font-size:.95rem;font-family:ui-monospace,monospace;font-weight:600;letter-spacing:0;word-break:break-all}
 /* —— Yazi-style 3-pane disk browser —— */
 .card-disk{padding:12px 14px 10px;background:#0b0e14;border-color:#1a2030}
 .card-disk .toolbar{margin-bottom:8px}
@@ -176,6 +217,50 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 <h1><span class="logo">☁</span><span class="word">WattSapDrive</span> <span id="badge" class="status off">offline</span></h1>
 <p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/qr" target="_blank">QR-логін</a></p>
 
+<div class="card net-widget" id="netWidget">
+  <div class="net-top">
+    <img id="netAvatar" class="net-av" alt="" hidden>
+    <div id="netAvatarPh" class="net-av ph" aria-hidden="true">👤</div>
+    <div class="net-who">
+      <div class="net-phone" id="netPhone">—</div>
+      <div class="net-name" id="netName"></div>
+      <div class="net-group" id="netGroup">група: —</div>
+    </div>
+    <button type="button" class="btn secondary" id="btnSpeed" title="Локальний інтернет + пробний файл у WhatsApp (залити → викачати → видалити)">Перевірити швидкість</button>
+  </div>
+  <div class="net-grid">
+    <div class="net-cell ip net-ip">
+      <span class="k"><span class="ico">🌐</span> Публічний IP</span>
+      <div class="net-val"><span class="net-num" id="netIp">—</span></div>
+      <span class="sub2" id="netIpHint">звідки сидиш у мережі</span>
+    </div>
+    <div class="net-cell idin">
+      <span class="k"><span class="ico">⬇</span> Інтернет <span class="net-tier wait" id="netInetDownTier">—</span></span>
+      <div class="net-val"><span class="net-num" id="netInetDown">—</span><span class="net-unit" id="netInetDownUnit"></span></div>
+      <div class="net-meter"><i id="netInetDownBar"></i></div>
+      <span class="sub2" id="netInetDownHint">натисни перевірку</span>
+    </div>
+    <div class="net-cell iup">
+      <span class="k"><span class="ico">⬆</span> Інтернет <span class="net-tier wait" id="netInetUpTier">—</span></span>
+      <div class="net-val"><span class="net-num" id="netInetUp">—</span><span class="net-unit" id="netInetUpUnit"></span></div>
+      <div class="net-meter"><i id="netInetUpBar"></i></div>
+      <span class="sub2" id="netInetUpHint">натисни перевірку</span>
+    </div>
+    <div class="net-cell wup">
+      <span class="k"><span class="ico">☁↑</span> WhatsApp <span class="net-tier wait" id="netWaUpTier">—</span></span>
+      <div class="net-val"><span class="net-num" id="netWaUp">—</span><span class="net-unit" id="netWaUpUnit"></span></div>
+      <div class="net-meter"><i id="netWaUpBar"></i></div>
+      <span class="sub2" id="netWaUpHint">кнопка перевірки</span>
+    </div>
+    <div class="net-cell wdn">
+      <span class="k"><span class="ico">☁↓</span> WhatsApp <span class="net-tier wait" id="netWaDownTier">—</span></span>
+      <div class="net-val"><span class="net-num" id="netWaDown">—</span><span class="net-unit" id="netWaDownUnit"></span></div>
+      <div class="net-meter"><i id="netWaDownBar"></i></div>
+      <span class="sub2" id="netWaDownHint">кнопка перевірки</span>
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="upload-zone" id="dropzone">
     <p style="font-size:2rem">📤</p>
@@ -190,6 +275,7 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
       <button type="button" class="btn secondary" id="btnMkdir">Створити папку</button>
     </div>
     <p class="hint" style="margin-top:10px">«Залити папку» відкриває вибір <b>директорії</b>. Або просто перетягни папку в цю зону.</p>
+    <p class="hint" id="chunkHint">Файли <b>&gt;95 MB</b> ріжуться на чанки автоматично (ліміт WhatsApp ~100 MB на частину). · build <b>net-v3</b></p>
     <label class="hint" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer;margin-top:6px" onclick="event.stopPropagation()">
       <input type="checkbox" id="skipJunk" style="width:auto">
       пропускати службові (<code>.DS_Store</code>, <code>node_modules</code>, <code>.git</code>)
@@ -248,6 +334,35 @@ const yaziPath = document.getElementById('yaziPath')
 const yaziFoot = document.getElementById('yaziFoot')
 const empty = document.getElementById('empty')
 const badge = document.getElementById('badge')
+const netPhone = document.getElementById('netPhone')
+const netName = document.getElementById('netName')
+const netGroup = document.getElementById('netGroup')
+const netAvatar = document.getElementById('netAvatar')
+const netAvatarPh = document.getElementById('netAvatarPh')
+const netIp = document.getElementById('netIp')
+const netInetDown = document.getElementById('netInetDown')
+const netInetUp = document.getElementById('netInetUp')
+const netInetDownHint = document.getElementById('netInetDownHint')
+const netInetUpHint = document.getElementById('netInetUpHint')
+const netInetDownUnit = document.getElementById('netInetDownUnit')
+const netInetUpUnit = document.getElementById('netInetUpUnit')
+const netInetDownBar = document.getElementById('netInetDownBar')
+const netInetUpBar = document.getElementById('netInetUpBar')
+const netInetDownTier = document.getElementById('netInetDownTier')
+const netInetUpTier = document.getElementById('netInetUpTier')
+const netWaUp = document.getElementById('netWaUp')
+const netWaDown = document.getElementById('netWaDown')
+const netWaUpHint = document.getElementById('netWaUpHint')
+const netWaDownHint = document.getElementById('netWaDownHint')
+const netWaUpUnit = document.getElementById('netWaUpUnit')
+const netWaDownUnit = document.getElementById('netWaDownUnit')
+const netWaUpBar = document.getElementById('netWaUpBar')
+const netWaDownBar = document.getElementById('netWaDownBar')
+const netWaUpTier = document.getElementById('netWaUpTier')
+const netWaDownTier = document.getElementById('netWaDownTier')
+const btnSpeed = document.getElementById('btnSpeed')
+let liveWaUp = false
+let liveWaDown = false
 const msg = document.getElementById('msg')
 const statsEl = document.getElementById('stats')
 const progressWrap = document.getElementById('progressWrap')
@@ -280,6 +395,7 @@ function persistNav() {
   } catch {}
 }
 const PER_FILE_TIMEOUT_MS = 210000
+const CHUNK_SIZE = 95 * 1024 * 1024 // 95MB — under WhatsApp ~100MB document limit
 
 function setStopEnabled(on) {
   btnStop.disabled = !on
@@ -582,6 +698,7 @@ function xhrUpload(file, path, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     activeXhr = xhr
+    const liveT0 = performance.now()
     let settled = false
     let waTimer = null
     let waTick = 0
@@ -600,10 +717,14 @@ function xhrUpload(file, path, onProgress) {
     xhr.timeout = PER_FILE_TIMEOUT_MS
     xhr.upload.onprogress = e => {
       if (!e.lengthComputable) return
+      liveWaUp = true
+      const sec = Math.max(.05, (performance.now() - liveT0) / 1000)
+      showLiveSpeed('up', e.loaded / sec, e.loaded, e.total || file.size, 'браузер → сервер')
       onProgress({ phase: 'http', loaded: e.loaded, total: e.total || file.size })
     }
     xhr.upload.onload = () => {
       // HTTP body already on server — now Baileys sends to WhatsApp (can take long)
+      showWaWaiting('up', path, 'WhatsApp приймає файл…')
       onProgress({ phase: 'wa', loaded: file.size, total: file.size, waMs: 0 })
       waTimer = setInterval(() => {
         waTick += 1
@@ -613,18 +734,129 @@ function xhrUpload(file, path, onProgress) {
     xhr.onload = () => {
       let j = {}
       try { j = JSON.parse(xhr.responseText || '{}') } catch {}
-      if (xhr.status >= 200 && xhr.status < 300) finish(resolve, j)
-      else finish(reject, new Error(j.error || xhr.statusText || String(xhr.status)))
+      liveWaUp = false
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (j.bps) showFinishedSpeed('up', j.bps, j.size || file.size, j.ms, path)
+        finish(resolve, j)
+      } else finish(reject, new Error(j.error || xhr.statusText || String(xhr.status)))
     }
-    xhr.onerror = () => finish(reject, new Error('network error'))
-    xhr.onabort = () => finish(reject, new Error('скасовано'))
-    xhr.ontimeout = () => finish(reject, new Error('timeout ' + PER_FILE_TIMEOUT_MS + 'ms'))
+    xhr.onerror = () => { liveWaUp = false; finish(reject, new Error('network error')) }
+    xhr.onabort = () => { liveWaUp = false; finish(reject, new Error('скасовано')) }
+    xhr.ontimeout = () => { liveWaUp = false; finish(reject, new Error('timeout ' + PER_FILE_TIMEOUT_MS + 'ms')) }
     const hardTimeout = setTimeout(() => {
       try { xhr.abort() } catch {}
       finish(reject, new Error('abort timeout'))
     }, PER_FILE_TIMEOUT_MS + 5000)
     xhr.send(file)
   })
+}
+
+function xhrPostBlob(url, blob, headers, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    activeXhr = xhr
+    const liveT0 = performance.now()
+    const liveName = headers?.['x-file-name'] || 'чанк'
+    let settled = false
+    let waTimer = null
+    let waTick = 0
+    const finish = (fn, arg) => {
+      if (settled) return
+      settled = true
+      clearTimeout(hardTimeout)
+      clearInterval(waTimer)
+      if (activeXhr === xhr) activeXhr = null
+      fn(arg)
+    }
+    xhr.open('POST', url)
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+    for (const [k, v] of Object.entries(headers || {})) xhr.setRequestHeader(k, v)
+    if (API_TOKEN) xhr.setRequestHeader('Authorization', 'Bearer ' + API_TOKEN)
+    xhr.timeout = PER_FILE_TIMEOUT_MS
+    xhr.upload.onprogress = e => {
+      if (!e.lengthComputable) return
+      liveWaUp = true
+      const sec = Math.max(.05, (performance.now() - liveT0) / 1000)
+      showLiveSpeed('up', e.loaded / sec, e.loaded, e.total || blob.size, 'чанк → сервер')
+      onProgress({ phase: 'http', loaded: e.loaded, total: e.total || blob.size })
+    }
+    xhr.upload.onload = () => {
+      showWaWaiting('up', liveName, 'WhatsApp приймає чанк…')
+      onProgress({ phase: 'wa', loaded: blob.size, total: blob.size, waMs: 0 })
+      waTimer = setInterval(() => {
+        waTick += 1
+        onProgress({ phase: 'wa', loaded: blob.size, total: blob.size, waMs: waTick * 1000 })
+      }, 1000)
+    }
+    xhr.onload = () => {
+      let j = {}
+      try { j = JSON.parse(xhr.responseText || '{}') } catch {}
+      liveWaUp = false
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (j.bps) showFinishedSpeed('up', j.bps, j.size || blob.size, j.ms, liveName)
+        finish(resolve, j)
+      } else finish(reject, new Error(j.error || xhr.statusText || String(xhr.status)))
+    }
+    xhr.onerror = () => { liveWaUp = false; finish(reject, new Error('network error')) }
+    xhr.onabort = () => { liveWaUp = false; finish(reject, new Error('скасовано')) }
+    xhr.ontimeout = () => { liveWaUp = false; finish(reject, new Error('timeout ' + PER_FILE_TIMEOUT_MS + 'ms')) }
+    const hardTimeout = setTimeout(() => {
+      try { xhr.abort() } catch {}
+      finish(reject, new Error('abort timeout'))
+    }, PER_FILE_TIMEOUT_MS + 5000)
+    xhr.send(blob)
+  })
+}
+
+/** Auto-split files over ~95MB into WA-safe chunks, then merge in catalog. */
+async function uploadFileSmart(file, path, onProgress) {
+  const size = Number(file.size) || 0
+  if (size <= CHUNK_SIZE) return xhrUpload(file, path, onProgress)
+
+  const totalChunks = Math.ceil(size / CHUNK_SIZE)
+  const uid = Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10)
+  console.log(`[chunk] ${path} ${size} B → ${totalChunks} parts @ ${CHUNK_SIZE}`)
+  let baseDone = 0
+  const t0 = performance.now()
+  let chunkT0 = t0
+
+  for (let i = 0; i < totalChunks; i++) {
+    if (cancelRequested) throw new Error('скасовано')
+    const start = i * CHUNK_SIZE
+    const end = Math.min(start + CHUNK_SIZE, size)
+    const blob = file.slice(start, end)
+    if (!blob.size) throw new Error(`порожній чанк ${i + 1}/${totalChunks}`)
+    chunkT0 = performance.now()
+    await xhrPostBlob('/api/upload-chunk', blob, {
+      'x-file-name': path,
+      'x-chunk-uid': uid,
+      'x-chunk-index': String(i),
+      'x-chunk-total': String(totalChunks),
+      'x-file-size': String(size)
+    }, p => {
+      const loadedInFile = baseDone + (p.phase === 'http' ? p.loaded : blob.size)
+      // ETA from completed-chunk wall time (honest once ≥1 chunk done)
+      let etaSec = NaN
+      const completed = i
+      const nowMs = performance.now()
+      if (completed >= 1) {
+        const avgPerChunk = (nowMs - t0) / completed
+        const remainingChunks = totalChunks - completed
+        etaSec = Math.max(0, (avgPerChunk * remainingChunks - (nowMs - chunkT0)) / 1000)
+      }
+      onProgress({
+        phase: p.phase,
+        loaded: loadedInFile,
+        total: size,
+        waMs: p.waMs || 0,
+        chunk: i + 1,
+        chunks: totalChunks,
+        etaSec
+      })
+    })
+    baseDone = end
+  }
+  return { ok: true, chunked: true, chunks: totalChunks, uid }
 }
 
 async function uploadList(list) {
@@ -683,24 +915,22 @@ async function uploadList(list) {
     const dt = (b.t - a.t) / 1000
     return dt > 0.05 ? (b.bytes - a.bytes) / dt : 0
   }
-  function renderOverall(currentPath, phase, fileLoaded, fileSize, waMs) {
+  function renderOverall(currentPath, phase, fileLoaded, fileSize, waMs, extra) {
+    extra = extra || {}
     const inFile = Math.min(fileLoaded || 0, fileSize || 0)
-    // For WA phase HTTP already finished — count full file toward overall only when done;
-    // during WA keep overall at doneBytes (don't fake WA bytes), but show phase.
-    const overallBytes = doneBytes + (phase === 'http' ? inFile : 0)
-    const pct = totalBytes ? Math.min(99.5, (overallBytes / totalBytes) * 100) : 0
-    const displayPct = phase === 'done' ? Math.round(doneBytes / totalBytes * 100) : Math.round(pct)
+    // monotonic progress: count uploaded bytes of the current file in both phases
+    const overallBytes = doneBytes + inFile
+    const pct = totalBytes ? Math.min(99.99, (overallBytes / totalBytes) * 100) : 0
+    const displayPct = phase === 'done' ? 100 : pct
     const speed = currentSpeed(overallBytes)
-    let remain = totalBytes - overallBytes
-    if (phase === 'wa') remain = Math.max(remain, fileSize || 0)
-    const etaSec = speed > 256 ? remain / speed : NaN
     progBar.style.width = displayPct + '%'
-    progPct.textContent = displayPct + '%'
-    progBytes.textContent = `${fmtSize(doneBytes)} / ${fmtSize(totalBytes)}`
+    progPct.textContent = displayPct.toFixed(2) + '%'
+    progBytes.textContent = `${fmtSize(overallBytes)} / ${fmtSize(totalBytes)}`
     progSpeed.textContent = fmtSpeed(speed)
-    progEta.textContent = fmtEta(etaSec)
-    progPhase.textContent = phase === 'http' ? 'HTTP → сервер'
-      : phase === 'wa' ? `WhatsApp… ${waMs ? Math.round(waMs/1000)+'с' : ''}`
+    progEta.textContent = extra.chunk ? `чанк ${extra.chunk}/${extra.chunks}` : ''
+    const chunkTag = extra.chunk ? ` · чанк ${extra.chunk}/${extra.chunks}` : ''
+    progPhase.textContent = phase === 'http' ? 'надсилаю' + chunkTag
+      : phase === 'wa' ? 'WhatsApp приймає' + chunkTag
       : phase === 'done' ? 'готово' : '—'
     progLabel.textContent = `${doneFiles}/${filtered.length} · ${currentPath || ''}`
   }
@@ -752,20 +982,24 @@ async function uploadList(list) {
     }
     if (cancelRequested) return 'cancel'
     try {
-      await xhrUpload(job.file, job.path, p => {
+      const big = job.file.size > CHUNK_SIZE
+      if (big) setReason(job, `чанки по ${fmtSize(CHUNK_SIZE)}`)
+      await uploadFileSmart(job.file, job.path, p => {
+        const extra = { chunk: p.chunk, chunks: p.chunks }
+        const pct = p.total ? (p.loaded / p.total * 100) : 0
         if (p.phase === 'http') {
           job.st.className = 'st run'
-          const pct = p.total ? Math.round(p.loaded / p.total * 100) : 0
-          job.st.textContent = (isRetry ? '↻ ' : '') + pct + '%'
-          renderOverall(job.path, 'http', p.loaded, p.total || job.file.size, 0)
+          job.st.textContent = (isRetry ? '↻ ' : '') + (p.chunks ? `${p.chunk}/${p.chunks} ` : '') + pct.toFixed(1) + '%'
+          renderOverall(job.path, 'http', p.loaded, p.total || job.file.size, 0, extra)
         } else if (p.phase === 'wa') {
           job.st.className = 'st wa'
-          job.st.textContent = 'WA ' + (p.waMs ? Math.round(p.waMs / 1000) + 'с' : '…')
-          renderOverall(job.path, 'wa', job.file.size, job.file.size, p.waMs || 0)
+          job.st.textContent = (p.chunks ? `${p.chunk}/${p.chunks} ` : '') + pct.toFixed(1) + '%'
+          renderOverall(job.path, 'wa', p.loaded || job.file.size, job.file.size, p.waMs || 0, extra)
         }
       })
       job.st.className = 'st ok'
       job.st.textContent = 'OK'
+      setReason(job, big ? `склеєно з ${Math.ceil(job.file.size / CHUNK_SIZE)} частин` : '')
       job.done = true
       doneBytes += job.file.size
       doneFiles++
@@ -870,7 +1104,9 @@ function explainError(e) {
   if (m.includes('409') || m.includes('in progress')) return 'уже йде інше завантаження'
   if (m.includes('reserved') || m.includes('internal name')) return 'зарезервована службова назва'
   if (m.includes('empty')) return 'порожній файл (0 байт)'
-  if (m.includes('413') || m.includes('too large') || m.includes('payload')) return 'файл завеликий (ліміт 100 MB)'
+  if (m.includes('413') || m.includes('too large') || m.includes('payload') || m.includes('entity too large')) {
+    return 'сервер відхилив розмір (старий UI без чанків? Ctrl+Shift+R). Великі файли мають іти по /api/upload-chunk'
+  }
   if (m.includes('network')) return 'мережа: сервер недоступний'
   if (m.includes('401') || m.includes('auth')) return 'не авторизовано (перевір токен)'
   if (m.includes('500')) return 'внутрішня помилка сервера'
@@ -1159,8 +1395,9 @@ function renderPreview(ent, tree) {
     `mime:   ${f.mime || '—'}`,
     `дата:   ${fmtDate(f.uploadedAt)}`,
     `id:     ${f.id}`,
-    f.hasMedia ? 'медіа:  так (можна ↓)' : 'медіа:  немає в каталозі'
-  ].join('\n')
+    f.hasMedia ? 'медіа:  так (можна ↓)' : 'медіа:  немає в каталозі',
+    f.chunks ? `чанки:  ${f.chunks} частин (склеюються при ↓)` : null
+  ].filter(Boolean).join('\n')
   const acts = document.createElement('div')
   acts.className = 'yazi-prev-actions'
   if (f.hasMedia) {
@@ -1168,6 +1405,10 @@ function renderPreview(ent, tree) {
     a.className = 'btn'
     a.href = `/api/download/${encodeURIComponent(f.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
     a.textContent = '↓ Завантажити'
+    a.addEventListener('click', e => {
+      e.preventDefault()
+      downloadFileLive(f)
+    })
     acts.appendChild(a)
   }
   const ren = document.createElement('button')
@@ -1218,7 +1459,42 @@ function renderDrive() {
   const selected = list.find(e => e.key === selectedKey) || null
   persistNav()
 
-  yaziPath.textContent = '/' + (cwd || '') + (cwd ? '/' : '')
+  // clickable breadcrumb
+  yaziPath.innerHTML = ''
+  const parts = [''].concat((cwd || '').split('/').filter(Boolean))
+  let acc = ''
+  parts.forEach((part, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span')
+      sep.textContent = '/'
+      sep.style.opacity = '.5'
+      yaziPath.appendChild(sep)
+      acc = acc ? acc + '/' + part : part
+    }
+    const a = document.createElement('a')
+    a.href = '#'
+    a.textContent = i === 0 ? '~' : part
+    a.style.color = '#7dd3fc'
+    a.style.textDecoration = 'none'
+    const jump = acc
+    a.onclick = e => {
+      e.preventDefault()
+      cwd = jump
+      selectedKey = ''
+      persistNav()
+      renderDrive()
+    }
+    yaziPath.appendChild(a)
+  })
+  if (!cwd) {
+    // already have ~
+  } else {
+    const tip = document.createElement('span')
+    tip.style.cssText = 'margin-left:10px;color:#6b7585;font-size:.75rem'
+    tip.textContent = '· клік по шляху = вгору'
+    yaziPath.appendChild(tip)
+  }
+
   yaziParent.innerHTML = ''
   yaziMain.innerHTML = ''
 
@@ -1247,7 +1523,11 @@ function renderDrive() {
 
   // middle
   if (!list.length) {
-    yaziMain.innerHTML = `<div class="yazi-empty">${searchQ ? 'нічого не знайдено' : '(порожньо)'}</div>`
+    const rootDirs = (drive.folders || []).filter(f => f.path && !f.path.includes('/')).map(f => f.path)
+    const hint = cwd
+      ? `Папка порожня.\nФайли каталогу зараз у: ${rootDirs.slice(0, 8).join(', ') || '—'}\n← Backspace або клік по ~ щоб на корінь.`
+      : '(порожньо)'
+    yaziMain.innerHTML = `<div class="yazi-empty" style="white-space:pre-wrap">${escapeHtml(hint)}</div>`
     empty.style.display = 'none'
   } else {
     empty.style.display = 'none'
@@ -1258,7 +1538,7 @@ function renderDrive() {
         onDbl: () => {
           if (ent.kind === 'dir') { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
           else if (ent.file?.hasMedia) {
-            location.href = `/api/download/${encodeURIComponent(ent.file.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
+            downloadFileLive(ent.file)
           }
         }
       }))
@@ -1318,8 +1598,312 @@ async function refreshStatus() {
     const on=!!(s.connected||s.c)
     badge.textContent=on?'online':'offline'
     badge.className='status '+(on?'on':'off')
+    fillNetWidget(s)
   } catch { badge.textContent='down'; badge.className='status off' }
 }
+
+function fillNetWidget(s) {
+  const me = s.me || {}
+  const group = s.group || {}
+  const net = s.net || {}
+  netPhone.textContent = me.phone || (s.user ? ('+' + String(s.user).split(':')[0].split('@')[0]) : '—')
+  netName.textContent = me.name || ''
+  const gName = group.name || ''
+  const gId = group.id || s.g || ''
+  netGroup.textContent = gName ? ('група: ' + gName) : (gId ? ('група: ' + gId) : 'група: —')
+  netIp.textContent = net.publicIp || '—'
+  if (!liveWaUp) {
+    paintSpeed(netWaUp, netWaUpUnit, netWaUpBar, netWaUpTier, netWaUpHint, net.waUp, 'очікую заливку', 2e6)
+  }
+  if (!liveWaDown) {
+    paintSpeed(netWaDown, netWaDownUnit, netWaDownBar, netWaDownTier, netWaDownHint, net.waDown, 'очікую викачку', 2e6)
+  }
+  if (me.avatar) {
+    netAvatar.src = me.avatar + '?t=' + (me.avatarAt || Date.now())
+    netAvatar.hidden = false
+    netAvatarPh.style.display = 'none'
+    netAvatar.onerror = () => {
+      netAvatar.hidden = true
+      netAvatarPh.style.display = ''
+    }
+  } else {
+    netAvatar.hidden = true
+    netAvatarPh.style.display = ''
+  }
+}
+
+function splitSpeed(bps) {
+  if (!bps || !Number.isFinite(bps) || bps <= 0) return { num: '—', unit: '' }
+  const u = ['B/s', 'KB/s', 'MB/s', 'GB/s']
+  let v = bps, i = 0
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++ }
+  const num = v >= 100 ? Math.round(v).toString() : (v >= 10 ? v.toFixed(1) : v.toFixed(2))
+  return { num, unit: u[i] }
+}
+
+function speedTier(bps, refFast) {
+  // refFast ≈ "швидко" для цього каналу (inet vs WA)
+  const fast = refFast || 20e6
+  if (!bps || bps <= 0) return { cls: 'wait', label: '—', pct: 0 }
+  const ratio = bps / fast
+  const pct = Math.max(4, Math.min(100, Math.round(Math.sqrt(ratio) * 100)))
+  if (ratio >= 0.7) return { cls: 'fast', label: 'FAST', pct }
+  if (ratio >= 0.2) return { cls: 'ok', label: 'OK', pct }
+  return { cls: 'slow', label: 'SLOW', pct }
+}
+
+function paintSpeed(numEl, unitEl, barEl, tierEl, hintEl, rec, fallbackHint, refFast) {
+  if (rec && rec.bps > 0) {
+    setSpeedView(numEl, unitEl, barEl, tierEl, rec.bps, refFast)
+    if (hintEl) hintEl.textContent = rec.name ? (rec.name.split('/').pop() + ' · ' + fmtSize(rec.size || 0)) : fallbackHint
+  } else {
+    setSpeedView(numEl, unitEl, barEl, tierEl, 0, refFast)
+    if (hintEl) hintEl.textContent = fallbackHint
+  }
+}
+
+function setSpeedView(numEl, unitEl, barEl, tierEl, bps, refFast) {
+  const { num, unit } = splitSpeed(bps)
+  const tier = speedTier(bps, refFast)
+  if (numEl) numEl.textContent = num
+  if (unitEl) unitEl.textContent = unit
+  if (barEl) barEl.style.width = tier.pct + '%'
+  if (tierEl) {
+    tierEl.textContent = tier.label
+    tierEl.className = 'net-tier ' + tier.cls
+  }
+}
+
+function showLiveSpeed(dir, bps, loaded, total, phase) {
+  const up = dir === 'up'
+  const numEl = up ? netWaUp : netWaDown
+  const unitEl = up ? netWaUpUnit : netWaDownUnit
+  const barEl = up ? netWaUpBar : netWaDownBar
+  const tierEl = up ? netWaUpTier : netWaDownTier
+  const hintEl = up ? netWaUpHint : netWaDownHint
+  setSpeedView(numEl, unitEl, barEl, tierEl, bps, 2e6)
+  if (barEl && total > 0) barEl.style.width = Math.min(100, loaded / total * 100) + '%'
+  if (tierEl) {
+    tierEl.textContent = 'LIVE'
+    tierEl.className = 'net-tier fast'
+  }
+  if (hintEl) hintEl.textContent = `${phase} · ${fmtSize(loaded)} / ${fmtSize(total || loaded)}`
+}
+
+function showWaWaiting(dir, name, text) {
+  const up = dir === 'up'
+  const numEl = up ? netWaUp : netWaDown
+  const unitEl = up ? netWaUpUnit : netWaDownUnit
+  const barEl = up ? netWaUpBar : netWaDownBar
+  const tierEl = up ? netWaUpTier : netWaDownTier
+  const hintEl = up ? netWaUpHint : netWaDownHint
+  if (numEl) numEl.textContent = '…'
+  if (unitEl) unitEl.textContent = ''
+  if (barEl) barEl.style.width = '100%'
+  if (tierEl) {
+    tierEl.textContent = 'LIVE'
+    tierEl.className = 'net-tier fast'
+  }
+  if (hintEl) hintEl.textContent = `${text} ${String(name || '').split('/').pop()}`
+}
+
+function showFinishedSpeed(dir, bps, size, ms, name) {
+  const up = dir === 'up'
+  setSpeedView(
+    up ? netWaUp : netWaDown,
+    up ? netWaUpUnit : netWaDownUnit,
+    up ? netWaUpBar : netWaDownBar,
+    up ? netWaUpTier : netWaDownTier,
+    bps,
+    2e6
+  )
+  const hintEl = up ? netWaUpHint : netWaDownHint
+  if (hintEl) hintEl.textContent = `${String(name || '').split('/').pop()} · ${fmtSize(size)} · ${(ms / 1000).toFixed(1)} с`
+}
+
+async function downloadFileLive(file) {
+  if (!file?.id || liveWaDown) return
+  liveWaDown = true
+  let writable = null
+  try {
+    // Chromium can stream directly to disk, avoiding a huge in-memory Blob.
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({ suggestedName: file.name || 'download' })
+      writable = await handle.createWritable()
+    }
+
+    showWaWaiting('down', file.name, 'WhatsApp готує файл…')
+    const t0 = performance.now()
+    const r = await api('/api/download/' + encodeURIComponent(file.id))
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}))
+      throw new Error(j.error || `download ${r.status}`)
+    }
+    const total = Number(r.headers.get('content-length')) || Number(file.size) || 0
+    const reader = r.body?.getReader()
+    if (!reader) throw new Error('браузер не підтримує streaming download')
+    const chunks = []
+    let loaded = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      loaded += value.byteLength
+      if (writable) await writable.write(value)
+      else chunks.push(value)
+      const sec = Math.max(.05, (performance.now() - t0) / 1000)
+      showLiveSpeed('down', loaded / sec, loaded, total || loaded, 'WhatsApp → браузер')
+    }
+    if (writable) {
+      await writable.close()
+      writable = null
+    } else {
+      const blob = new Blob(chunks, { type: r.headers.get('content-type') || 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.name || 'download'
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    }
+    const ms = Math.max(1, performance.now() - t0)
+    showFinishedSpeed('down', loaded / (ms / 1000), loaded, ms, file.name)
+  } catch (e) {
+    if (writable) await writable.abort().catch(() => {})
+    if (e?.name !== 'AbortError') {
+      msg.className = 'err'
+      msg.textContent = 'download: ' + String(e.message || e)
+    }
+  } finally {
+    liveWaDown = false
+  }
+}
+
+btnSpeed?.addEventListener('click', async () => {
+  if (!btnSpeed || btnSpeed.disabled) return
+  btnSpeed.disabled = true
+  const prev = btnSpeed.textContent
+  const setBtn = (t) => { btnSpeed.textContent = t }
+
+  function makeProbe(size) {
+    // zeros are fine for throughput; avoid crypto.getRandomValues (max 64 KiB)
+    return new Uint8Array(size)
+  }
+
+  try {
+    // —— 1) local internet (to this server) ——
+    setBtn('Інтернет ↓…')
+    setSpeedView(netInetDown, netInetDownUnit, netInetDownBar, netInetDownTier, 0, 80e6)
+    setSpeedView(netInetUp, netInetUpUnit, netInetUpBar, netInetUpTier, 0, 40e6)
+    netInetDown.textContent = '…'
+    netInetUp.textContent = '…'
+    const downSize = 2_000_000
+    const t0 = performance.now()
+    const r = await api('/api/speedtest?size=' + downSize)
+    if (!r.ok) throw new Error('internet ↓: HTTP ' + r.status)
+    const buf = await r.arrayBuffer()
+    const downSec = Math.max(0.05, (performance.now() - t0) / 1000)
+    const inetDownBps = buf.byteLength / downSec
+    setSpeedView(netInetDown, netInetDownUnit, netInetDownBar, netInetDownTier, inetDownBps, 80e6)
+    netInetDownHint.textContent = fmtSize(buf.byteLength) + ' · ' + downSec.toFixed(1) + ' с'
+
+    setBtn('Інтернет ↑…')
+    netInetUp.textContent = '…'
+    const upLocal = makeProbe(1_000_000)
+    const t1 = performance.now()
+    const ur = await api('/api/speedtest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: upLocal
+    })
+    if (!ur.ok) throw new Error('internet ↑: HTTP ' + ur.status)
+    const upSec = Math.max(0.05, (performance.now() - t1) / 1000)
+    const inetUpBps = upLocal.length / upSec
+    setSpeedView(netInetUp, netInetUpUnit, netInetUpBar, netInetUpTier, inetUpBps, 40e6)
+    netInetUpHint.textContent = fmtSize(upLocal.length) + ' · ' + upSec.toFixed(1) + ' с'
+
+    // —— 2) WhatsApp probe: upload → download → delete ——
+    const probeSize = 5 * 1024 * 1024
+    const probeName = '__speedtest__/probe-' + Date.now() + '.bin'
+    const probe = makeProbe(probeSize)
+    // stamp a few bytes so it's not empty-looking
+    probe[0] = 0x57; probe[1] = 0x53; probe[2] = 0x53; probe[3] = 0x50
+
+    setBtn('WhatsApp ↑…')
+    netWaUp.textContent = '…'
+    netWaUpHint.textContent = 'заливаю пробник ' + fmtSize(probeSize)
+    const tUp = performance.now()
+    const upR = await api('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'x-file-name': probeName
+      },
+      body: probe
+    })
+    const upJ = await upR.json().catch(() => ({}))
+    if (!upR.ok) throw new Error('WA ↑: ' + (upJ.error || upR.status))
+    const upMs = Math.max(1, upJ.ms || (performance.now() - tUp))
+    const upBps = (upJ.size || probeSize) / (upMs / 1000)
+    setSpeedView(netWaUp, netWaUpUnit, netWaUpBar, netWaUpTier, upBps, 2e6)
+    netWaUpHint.textContent = fmtSize(upJ.size || probeSize) + ' · ' + (upMs / 1000).toFixed(1) + ' с'
+    const fileId = upJ.id
+    if (!fileId) throw new Error('WA ↑: немає id файлу')
+
+    setBtn('WhatsApp ↓…')
+    netWaDown.textContent = '…'
+    netWaDownHint.textContent = 'викачую пробник'
+    const tDown = performance.now()
+    const dlR = await api('/api/download/' + encodeURIComponent(fileId))
+    if (!dlR.ok) {
+      const ej = await dlR.json().catch(() => ({}))
+      throw new Error('WA ↓: ' + (ej.error || dlR.status))
+    }
+    const dlBuf = await dlR.arrayBuffer()
+    const downMs = Math.max(1, performance.now() - tDown)
+    const downBps = dlBuf.byteLength / (downMs / 1000)
+    setSpeedView(netWaDown, netWaDownUnit, netWaDownBar, netWaDownTier, downBps, 2e6)
+    netWaDownHint.textContent = fmtSize(dlBuf.byteLength) + ' · ' + (downMs / 1000).toFixed(1) + ' с'
+
+    setBtn('Прибираю…')
+    const delR = await api('/api/files/' + encodeURIComponent(fileId), { method: 'DELETE' })
+    const delJ = await delR.json().catch(() => ({}))
+    if (!delR.ok) throw new Error('delete: ' + (delJ.error || delR.status))
+    // прибрати порожню папку пробника з каталогу
+    await api('/api/folders', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '__speedtest__' })
+    }).catch(() => {})
+
+    msg.className = 'okmsg'
+    msg.textContent = 'Перевірка ок: інтернет + WhatsApp ↑' + fmtSpeed(upBps) + ' / ↓' + fmtSpeed(downBps) + ' · пробник видалено'
+    // sync server-side counters + hide any leftover
+    await refreshStatus()
+    if (!uploading) loadDrive()
+  } catch (e) {
+    const err = String(e.message || e)
+    msg.className = 'err'
+    msg.textContent = 'Перевірка: ' + err
+    if (netInetDown.textContent === '…') {
+      netInetDown.textContent = 'err'
+      netInetDownHint.textContent = err
+      if (netInetDownTier) { netInetDownTier.textContent = 'ERR'; netInetDownTier.className = 'net-tier slow' }
+    }
+    if (netWaUp.textContent === '…') {
+      netWaUp.textContent = 'err'
+      netWaUpHint.textContent = err
+      if (netWaUpTier) { netWaUpTier.textContent = 'ERR'; netWaUpTier.className = 'net-tier slow' }
+    }
+    if (netWaDown.textContent === '…') {
+      netWaDown.textContent = 'err'
+      netWaDownHint.textContent = err
+      if (netWaDownTier) { netWaDownTier.textContent = 'ERR'; netWaDownTier.className = 'net-tier slow' }
+    }
+  } finally {
+    btnSpeed.disabled = false
+    btnSpeed.textContent = prev
+  }
+})
 
 async function loadDrive() {
   try {

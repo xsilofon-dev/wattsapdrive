@@ -11,6 +11,7 @@ const QRCode = require('qrcode')
 const express = require('express')
 const fs = require('fs')
 const path = require('path')
+const crypto = require('crypto')
 
 const ROOT = path.join(__dirname, '..')
 const AUTH = path.join(ROOT, 'auth')
@@ -49,6 +50,88 @@ acquireLock()
 
 let uploadState = { active: false, name: '', size: 0, startedAt: null, phase: '' }
 
+// last measured WhatsApp transfer speeds + cached profile for the status widget
+let transferStats = {
+  waUp: { bps: 0, size: 0, ms: 0, at: null, name: '' },
+  waDown: { bps: 0, size: 0, ms: 0, at: null, name: '' }
+}
+let profileCache = {
+  phone: null,
+  jid: null,
+  name: null,
+  avatarBuf: null,
+  avatarMime: null,
+  avatarAt: 0,
+  groupId: null,
+  groupName: null,
+  groupAt: 0,
+  publicIp: null,
+  ipAt: 0
+}
+
+function noteWaTransfer(dir, bytes, ms, name) {
+  const n = Number(bytes) || 0
+  const t = Number(ms) || 0
+  if (n < 1 || t < 1) return
+  const rec = {
+    bps: n / (t / 1000),
+    size: n,
+    ms: t,
+    at: new Date().toISOString(),
+    name: name || ''
+  }
+  if (dir === 'up') transferStats.waUp = rec
+  else transferStats.waDown = rec
+}
+
+async function refreshPublicIp(force = false) {
+  if (!force && profileCache.ipAt && Date.now() - profileCache.ipAt < 5 * 60_000) return
+  try {
+    const r = await fetch('https://api.ipify.org?format=json', {
+      signal: AbortSignal.timeout(4500)
+    })
+    if (!r.ok) return
+    const j = await r.json()
+    profileCache.publicIp = j.ip || null
+    profileCache.ipAt = Date.now()
+  } catch {}
+}
+
+async function refreshProfile(force = false) {
+  if (!sock?.user?.id) return
+  const bare = String(sock.user.id).split(':')[0]
+  const jid = bare.includes('@') ? bare : `${bare}@s.whatsapp.net`
+  profileCache.jid = jid
+  profileCache.phone = '+' + jid.replace(/@.+$/, '')
+  profileCache.name = sock.user.name || sock.user.verifiedName || null
+  profileCache.groupId = gid || null
+
+  if (force || !profileCache.avatarAt || Date.now() - profileCache.avatarAt > 10 * 60_000) {
+    try {
+      const url = await sock.profilePictureUrl(jid, 'image')
+      if (url) {
+        const r = await fetch(url, { signal: AbortSignal.timeout(8000) })
+        if (r.ok) {
+          profileCache.avatarBuf = Buffer.from(await r.arrayBuffer())
+          profileCache.avatarMime = r.headers.get('content-type') || 'image/jpeg'
+          profileCache.avatarAt = Date.now()
+        }
+      }
+    } catch {}
+  }
+
+  if (gid && (force || !profileCache.groupAt || Date.now() - profileCache.groupAt > 5 * 60_000 || profileCache.groupId !== gid)) {
+    try {
+      const meta = await sock.groupMetadata(gid)
+      profileCache.groupName = meta?.subject || null
+      profileCache.groupId = gid
+      profileCache.groupAt = Date.now()
+    } catch {
+      profileCache.groupName = profileCache.groupName || null
+    }
+  }
+}
+
 function withTimeout(promise, ms, label) {
   let t
   return Promise.race([
@@ -61,6 +144,20 @@ function withTimeout(promise, ms, label) {
 
 function readAppConfig() {
   try { return JSON.parse(fs.readFileSync(APP_CFG, 'utf8')) } catch { return {} }
+}
+
+function ensureAppConfig() {
+  if (fs.existsSync(APP_CFG)) return readAppConfig()
+  const token = crypto.randomBytes(8).toString('hex')
+  const cfg = {
+    version: '0.3.0',
+    auth: { token, enabled: true },
+    drive: { defaultFolder: '', maxFileSize: '2gb', provider: 'whatsapp' },
+    whatsapp: { group: '', phone: '' }
+  }
+  fs.writeFileSync(APP_CFG, JSON.stringify(cfg, null, 2))
+  console.log('Created app-config.json · token', token)
+  return cfg
 }
 
 function isCatalogShape(d) {
@@ -150,7 +247,7 @@ function recomputeFolderStats(drive) {
     }
   }
   for (const f of Object.values(drive.files)) {
-    if (entryHidden(f)) continue
+    if (entryHidden(f) || isChunkPart(f.name)) continue
     const folder = f.folder || ''
     ensureFolder(drive, folder, f.uploadedAt)
     const node = drive.folders[folder]
@@ -304,11 +401,16 @@ function entryHidden(f) {
   return !!f.hidden || isSystemFile(f.name, f.folder)
 }
 
+function isChunkPart(name) {
+  const n = String(name || '')
+  return /\.part\d{3}(of\d{3})?$/i.test(n)
+}
+
 function publicDrive() {
   const drive = readDrive()
   recomputeFolderStats(drive)
   const files = Object.values(drive.files)
-    .filter(f => !entryHidden(f))
+    .filter(f => !entryHidden(f) && !isChunkPart(f.name))
     .map(f => ({
       id: f.id,
       path: f.path,
@@ -318,7 +420,8 @@ function publicDrive() {
       mime: f.mime,
       uploadedAt: f.uploadedAt,
       ts: f.ts,
-      hasMedia: !!(f.media && f.remoteJid)
+      hasMedia: !!(f.media && f.remoteJid) || !!(f.chunked && Array.isArray(f.parts) && f.parts.length),
+      chunks: f.chunked ? (f.parts?.length || f.chunks || null) : null
     }))
     .sort((a, b) => String(b.uploadedAt).localeCompare(String(a.uploadedAt)))
   const folders = Object.values(drive.folders)
@@ -362,6 +465,7 @@ function indexMedia(m, opts = {}) {
   // WhatsApp echoes our own upload back through messages.upsert — keep the
   // explicit flag so a deliberately uploaded dotfile does not become hidden
   const explicit = !!opts.explicit || !!drive.files[m.key.id]?.explicit
+  const chunkPart = isChunkPart(base)
   drive.files[m.key.id] = {
     id: m.key.id,
     path: fullName,
@@ -373,22 +477,23 @@ function indexMedia(m, opts = {}) {
     ts,
     remoteJid: m.key.remoteJid,
     fromMe: !!m.key.fromMe,
-    explicit,
-    hidden: explicit ? isInternalMarker(base, folder) : isSystemFile(base, folder),
+    explicit: explicit && !chunkPart,
+    hidden: chunkPart || (explicit ? isInternalMarker(base, folder) : isSystemFile(base, folder)),
+    chunkPart: chunkPart || undefined,
     media: { [kind]: d }
   }
   writeDrive(drive)
 }
 
 const app = express()
-const appCfg = readAppConfig()
+const appCfg = ensureAppConfig()
 const AUTH_TOKEN = appCfg?.auth?.token || process.env.WS_TOKEN || ''
 const AUTH_ENABLED = !!(appCfg?.auth?.enabled && AUTH_TOKEN)
 
 app.use((req, res, next) => {
   if (!AUTH_ENABLED) return next()
   if (!req.path.startsWith('/api/')) return next()
-  if (req.path === '/api/status') return next()
+  if (req.path === '/api/status' || req.path === '/api/avatar' || req.path === '/api/speedtest') return next()
   const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
     || String(req.query.token || '')
   if (auth !== AUTH_TOKEN) {
@@ -396,7 +501,23 @@ app.use((req, res, next) => {
   }
   next()
 })
-app.use(express.static(path.join(ROOT, 'web')))
+// don't let browsers keep a stale index.html without chunking
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html' || req.path.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+  }
+  next()
+})
+app.use(express.static(path.join(ROOT, 'web'), {
+  etag: false,
+  lastModified: false,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+    }
+  }
+}))
 
 app.get('/qr', async (req, res) => {
   if (!qrString) {
@@ -410,9 +531,18 @@ app.get('/qr', async (req, res) => {
   }
 })
 
-app.get('/api/status', (req, res) => {
+app.get('/api/status', async (req, res) => {
   const drive = readDrive()
   const started = uploadState.startedAt ? Date.parse(uploadState.startedAt) : 0
+  // refresh profile/ip in background-ish (await briefly so first paint has data)
+  if (sock?.user?.id) {
+    await Promise.race([
+      Promise.all([refreshProfile(false), refreshPublicIp(false)]),
+      new Promise(r => setTimeout(r, 1200))
+    ])
+  } else {
+    refreshPublicIp(false).catch(() => {})
+  }
   res.json({
     connected: !!sock?.user?.id,
     c: !!sock?.user?.id,
@@ -430,8 +560,57 @@ app.get('/api/status', (req, res) => {
       phase: uploadState.phase,
       startedAt: uploadState.startedAt,
       elapsedMs: started ? Date.now() - started : 0
-    } : { active: false }
+    } : { active: false },
+    me: {
+      phone: profileCache.phone,
+      jid: profileCache.jid,
+      name: profileCache.name,
+      avatar: profileCache.avatarBuf ? '/api/avatar' : null
+    },
+    group: {
+      id: gid || profileCache.groupId || null,
+      name: profileCache.groupName || null
+    },
+    net: {
+      publicIp: profileCache.publicIp,
+      waUp: transferStats.waUp,
+      waDown: transferStats.waDown
+    }
   })
+})
+
+app.get('/api/avatar', (req, res) => {
+  if (!profileCache.avatarBuf) return res.status(404).json({ error: 'no avatar' })
+  res.setHeader('Content-Type', profileCache.avatarMime || 'image/jpeg')
+  res.setHeader('Cache-Control', 'private, max-age=300')
+  res.send(profileCache.avatarBuf)
+})
+
+app.get('/api/speedtest', (req, res) => {
+  const size = Math.min(Math.max(parseInt(req.query.size, 10) || 2_000_000, 64_000), 8_000_000)
+  res.setHeader('Content-Type', 'application/octet-stream')
+  res.setHeader('Content-Length', String(size))
+  res.setHeader('Cache-Control', 'no-store')
+  const chunk = Buffer.alloc(64 * 1024)
+  let left = size
+  const write = () => {
+    while (left > 0) {
+      const n = Math.min(chunk.length, left)
+      const ok = res.write(n === chunk.length ? chunk : chunk.subarray(0, n))
+      left -= n
+      if (!ok) {
+        res.once('drain', write)
+        return
+      }
+    }
+    res.end()
+  }
+  write()
+})
+
+app.post('/api/speedtest', express.raw({ type: '*/*', limit: '12mb' }), (req, res) => {
+  const size = Buffer.isBuffer(req.body) ? req.body.length : 0
+  res.json({ ok: true, size })
 })
 
 app.get('/api/drive', (req, res) => {
@@ -649,6 +828,7 @@ app.post('/api/upload', express.raw({ type: '*/*', limit: '100mb' }), async (req
     if (!sent) throw lastErr || new Error('send failed')
     indexMedia(sent, { explicit: true })
     const ms = Date.now() - t0
+    noteWaTransfer('up', buf.length, ms, name)
     console.log(`upload ok ${name} in ${ms}ms`)
     res.json({
       ok: true,
@@ -656,7 +836,8 @@ app.post('/api/upload', express.raw({ type: '*/*', limit: '100mb' }), async (req
       folder: folderPart,
       id: sent?.key?.id || null,
       size: buf.length,
-      ms
+      ms,
+      bps: buf.length / (ms / 1000)
     })
   } catch (e) {
     console.error(`upload fail ${name}: ${e.message}`)
@@ -667,10 +848,234 @@ app.post('/api/upload', express.raw({ type: '*/*', limit: '100mb' }), async (req
   }
 })
 
+function extractSentMedia(sent) {
+  if (!sent?.key?.id) return null
+  const d = sent.message?.documentMessage || sent.message?.imageMessage || sent.message?.videoMessage
+  if (!d) return null
+  const kind = sent.message.documentMessage
+    ? 'documentMessage'
+    : sent.message.imageMessage
+      ? 'imageMessage'
+      : 'videoMessage'
+  return {
+    id: sent.key.id,
+    remoteJid: sent.key.remoteJid,
+    fromMe: !!sent.key.fromMe,
+    size: toNum(d.fileLength),
+    mime: d.mimetype || 'application/octet-stream',
+    media: { [kind]: d }
+  }
+}
+
+async function sendWaDocument(jid, buf, fileName, mimetype) {
+  let lastErr = null
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    if (!sock?.user?.id) {
+      uploadState.phase = 'reconnect'
+      await waitForLiveSocket()
+    }
+    if (!sock?.user?.id) throw new Error('WhatsApp not connected')
+    try {
+      uploadState.phase = attempt > 1 ? `whatsapp retry ${attempt}` : 'whatsapp'
+      return await withTimeout(
+        sock.sendMessage(jid, {
+          document: buf,
+          fileName,
+          mimetype: mimetype || mimeOf(fileName)
+        }),
+        WA_SEND_TIMEOUT_MS,
+        'whatsapp send'
+      )
+    } catch (err) {
+      lastErr = err
+      const retryable = /connection closed|connection lost|closed|timed out/i.test(err.message)
+      if (!retryable || attempt === 3) throw err
+      console.log(`upload retry ${attempt} ${fileName}: ${err.message}`)
+      uploadState.phase = 'reconnect'
+      await waitForLiveSocket()
+    }
+  }
+  throw lastErr || new Error('send failed')
+}
+
+// Chunked upload: one part per request. Catalog shows ONE merged file when all parts arrive.
+app.post('/api/upload-chunk', express.raw({ type: '*/*', limit: '100mb' }), async (req, res) => {
+  if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
+  if (uploadState.active) return res.status(409).json({ error: 'upload already in progress', upload: uploadState })
+  const jid = targetJid()
+  if (!jid) return res.status(503).json({ error: 'No target chat' })
+
+  const uid = String(req.headers['x-chunk-uid'] || '').trim()
+  const idx = parseInt(req.headers['x-chunk-index'], 10)
+  const total = parseInt(req.headers['x-chunk-total'], 10)
+  const totalSize = parseInt(req.headers['x-file-size'], 10) || 0
+  let name = sanitizePath(req.headers['x-file-name'] || 'file') || 'file'
+  if (!uid || !Number.isFinite(idx) || idx < 0 || !Number.isFinite(total) || total < 2) {
+    return res.status(400).json({ error: 'x-chunk-uid, x-chunk-index, x-chunk-total required' })
+  }
+  if (idx >= total) return res.status(400).json({ error: 'chunk index out of range' })
+
+  const folderPart = name.includes('/') ? name.split('/').slice(0, -1).join('/') : ''
+  const baseName = name.includes('/') ? name.split('/').pop() : name
+  if (isInternalMarker(baseName, folderPart)) {
+    return res.status(400).json({ error: 'reserved internal name', name })
+  }
+
+  const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || [])
+  if (!buf.length) return res.status(400).json({ error: 'empty body' })
+
+  const partLabel = String(idx + 1).padStart(3, '0')
+  const totalLabel = String(total).padStart(3, '0')
+  const partFileName = `${name}.part${partLabel}of${totalLabel}`
+
+  const t0 = Date.now()
+  uploadState = {
+    active: true,
+    name: partFileName,
+    size: buf.length,
+    startedAt: new Date().toISOString(),
+    phase: 'whatsapp'
+  }
+  console.log(`chunk ${idx + 1}/${total} start ${partFileName} (${buf.length} B)`)
+
+  try {
+    const sent = await sendWaDocument(jid, buf, partFileName, 'application/octet-stream')
+    const meta = extractSentMedia(sent)
+    if (!meta) throw new Error('WhatsApp returned no media metadata')
+
+    // index part as hidden catalog row (also survives WA echo)
+    indexMedia(sent, { explicit: true })
+    const drive = readDrive()
+    if (drive.files[meta.id]) {
+      drive.files[meta.id].hidden = true
+      drive.files[meta.id].chunkPart = true
+      drive.files[meta.id].explicit = false
+    }
+
+    if (!drive.chunkSessions) drive.chunkSessions = {}
+    const sess = drive.chunkSessions[uid] || {
+      uid,
+      path: name,
+      folder: folderPart,
+      name: baseName,
+      total,
+      totalSize,
+      parts: {},
+      createdAt: new Date().toISOString()
+    }
+    sess.parts[String(idx)] = {
+      index: idx,
+      id: meta.id,
+      size: buf.length,
+      remoteJid: meta.remoteJid,
+      fromMe: meta.fromMe,
+      media: meta.media
+    }
+    sess.updatedAt = new Date().toISOString()
+    if (totalSize) sess.totalSize = totalSize
+    drive.chunkSessions[uid] = sess
+
+    const got = Object.keys(sess.parts).length
+    let merged = null
+    if (got >= total) {
+      const parts = []
+      for (let i = 0; i < total; i++) {
+        const p = sess.parts[String(i)]
+        if (!p) throw new Error(`missing chunk ${i + 1}/${total}`)
+        parts.push(p)
+      }
+      const sumSize = parts.reduce((s, p) => s + toNum(p.size), 0)
+      const mergedId = 'chunked_' + uid
+      ensureFolder(drive, folderPart)
+      drive.files[mergedId] = {
+        id: mergedId,
+        path: name,
+        folder: folderPart,
+        name: baseName,
+        size: totalSize || sumSize,
+        mime: mimeOf(name),
+        uploadedAt: new Date().toISOString(),
+        explicit: true,
+        hidden: false,
+        chunked: true,
+        chunkUid: uid,
+        parts: parts.map(p => ({
+          index: p.index,
+          id: p.id,
+          size: p.size,
+          remoteJid: p.remoteJid,
+          fromMe: p.fromMe,
+          media: p.media
+        }))
+      }
+      delete drive.chunkSessions[uid]
+      merged = { id: mergedId, path: name, size: drive.files[mergedId].size, parts: total }
+      console.log(`chunk merge ok ${name} → ${mergedId} (${total} parts, ${drive.files[mergedId].size} B)`)
+    }
+
+    writeDrive(drive)
+    const ms = Date.now() - t0
+    noteWaTransfer('up', buf.length, ms, partFileName)
+    res.json({
+      ok: true,
+      uid,
+      chunk: idx + 1,
+      total,
+      got,
+      done: !!merged,
+      id: merged?.id || meta.id,
+      name,
+      size: buf.length,
+      ms,
+      bps: buf.length / (ms / 1000),
+      merged
+    })
+  } catch (e) {
+    console.error(`chunk fail ${partFileName}: ${e.message}`)
+    const status = /timeout/i.test(e.message) ? 504 : (/not connected|closed/i.test(e.message) ? 503 : 500)
+    res.status(status).json({ error: e.message, name: partFileName, chunk: idx + 1, total })
+  } finally {
+    uploadState = { active: false, name: '', size: 0, startedAt: null, phase: '' }
+  }
+})
+
 app.get('/api/download/:id', async (req, res) => {
   if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
   const drive = readDrive()
   const entry = drive.files[req.params.id]
+  if (!entry) return res.status(404).json({ error: 'not found' })
+  const t0 = Date.now()
+
+  // reassembled multi-part file
+  if (entry.chunked && Array.isArray(entry.parts) && entry.parts.length) {
+    try {
+      const parts = [...entry.parts].sort((a, b) => a.index - b.index)
+      res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(entry.name)}"`)
+      if (entry.size) res.setHeader('Content-Length', String(entry.size))
+      let downloaded = 0
+      for (const part of parts) {
+        if (!part.media || !part.remoteJid) throw new Error(`chunk ${part.index} missing media`)
+        const msg = {
+          key: { id: part.id, remoteJid: part.remoteJid, fromMe: part.fromMe },
+          message: part.media
+        }
+        const buffer = await downloadMediaMessage(
+          msg,
+          'buffer',
+          {},
+          { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+        )
+        downloaded += buffer.length
+        res.write(buffer)
+      }
+      noteWaTransfer('down', downloaded, Date.now() - t0, entry.name)
+      return res.end()
+    } catch (e) {
+      return res.status(500).json({ error: e.message })
+    }
+  }
+
   if (!entry?.media || !entry.remoteJid) {
     return res.status(404).json({ error: 'File missing in drive-config or no media metadata' })
   }
@@ -685,6 +1090,7 @@ app.get('/api/download/:id', async (req, res) => {
       {},
       { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
     )
+    noteWaTransfer('down', buffer.length, Date.now() - t0, entry.name)
     res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(entry.name)}"`)
     res.send(buffer)
@@ -724,6 +1130,8 @@ async function start() {
         qrString = ''
         connectedAt = Date.now()
         console.log('WhatsApp connected:', sock.user?.id)
+        refreshProfile(true).catch(() => {})
+        refreshPublicIp(true).catch(() => {})
       }
       if (connection === 'close') {
         const code = lastDisconnect?.error?.output?.statusCode

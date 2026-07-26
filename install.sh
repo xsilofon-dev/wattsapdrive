@@ -1,48 +1,162 @@
 #!/usr/bin/env bash
-set -e
+# WattSapDrive — one-shot installer for a clean machine
+set -euo pipefail
 
-echo "🚀 WattSapDrive Installer v0.2.0"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+VERSION="0.3.0"
+PORT="${PORT:-3000}"
+HOST="${HOST:-127.0.0.1}"
+SERVICE_NAME="wattsapdrive"
+
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
+red() { printf '\033[31m%s\033[0m\n' "$*"; }
+info() { printf '  %s\n' "$*"; }
+
+echo ""
+echo "☁  WattSapDrive Installer v${VERSION}"
 echo "=================================="
+info "dir: $ROOT"
+echo ""
 
-# Check node
-if ! command -v node &>/dev/null; then
-    echo "❌ Node.js not found. Install: https://nodejs.org"
-    exit 1
+# —— Node.js ——
+if ! command -v node >/dev/null 2>&1; then
+  red "Node.js not found."
+  info "Install Node 18+: https://nodejs.org  (or: nix, apt, brew, nvm)"
+  exit 1
 fi
-echo "✅ Node $(node -v)"
+NODE_MAJOR="$(node -p "process.versions.node.split('.')[0]")"
+if [ "$NODE_MAJOR" -lt 18 ]; then
+  red "Need Node.js 18+, got $(node -v)"
+  exit 1
+fi
+green "Node $(node -v) · npm $(npm -v 2>/dev/null || echo '?')"
 
-# Install deps
-echo "📦 Installing packages..."
-npm install --omit=dev 2>/dev/null
+# —— Dependencies ——
+echo ""
+yellow "📦 npm install…"
+npm install --omit=dev
 
-# Auth
-echo "🔑 Auth token: YOUR_TOKEN"
-echo "   (change in drive-config.json → auth.token)"
+# —— Runtime dirs ——
+mkdir -p auth tmp logs uploads
 
-# Setup systemd
-SERVICE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-mkdir -p "$SERVICE_DIR"
-cat > "$SERVICE_DIR/wattsapdrive.service" << UNIT
+# —— app-config.json (token) ——
+if [ ! -f app-config.json ]; then
+  TOKEN="$(node -e "console.log(require('crypto').randomBytes(8).toString('hex'))")"
+  cat > app-config.json <<EOF
+{
+  "version": "${VERSION}",
+  "auth": {
+    "token": "${TOKEN}",
+    "enabled": true
+  },
+  "drive": {
+    "defaultFolder": "",
+    "maxFileSize": "2gb",
+    "provider": "whatsapp"
+  },
+  "whatsapp": {
+    "group": "",
+    "phone": ""
+  }
+}
+EOF
+  green "Created app-config.json · token ${TOKEN}"
+else
+  TOKEN="$(node -e "try{console.log(require('./app-config.json').auth.token||'')}catch{console.log('')}")"
+  yellow "app-config.json already exists · token ${TOKEN:-(see file)}"
+fi
+
+# —— empty catalog if missing ——
+if [ ! -f drive-config.json ]; then
+  node -e "
+    const fs=require('fs');
+    const now=new Date().toISOString();
+    fs.writeFileSync('drive-config.json', JSON.stringify({
+      version:1, defaultFolder:'', updatedAt:now,
+      folders:{'':{path:'',name:'/',createdAt:now,fileCount:0,totalSize:0}},
+      files:{}
+    }, null, 2));
+  "
+  green "Created empty drive-config.json"
+fi
+
+# —— systemd user unit (Linux) ——
+install_systemd() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    yellow "systemctl not found — skip service (start manually: npm start)"
+    return 1
+  fi
+  if ! systemctl --user show-environment >/dev/null 2>&1; then
+    yellow "systemd --user unavailable — skip service"
+    return 1
+  fi
+
+  NODE_BIN="$(command -v node)"
+  SERVICE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  mkdir -p "$SERVICE_DIR"
+  cat > "$SERVICE_DIR/${SERVICE_NAME}.service" <<UNIT
 [Unit]
-Description=WattSapDrive
-After=network.target
+Description=WattSapDrive — WhatsApp cloud storage
+After=network-online.target
+Wants=network-online.target
+
 [Service]
 Type=simple
-WorkingDirectory=$(pwd)
-ExecStart=$(which node) src/bot.js
-Restart=always
-RestartSec=5
+WorkingDirectory=${ROOT}
+ExecStart=${NODE_BIN} ${ROOT}/src/bot.js
+Restart=on-failure
+RestartSec=4
+Environment=PORT=${PORT}
+Environment=HOST=${HOST}
+Environment=NODE_ENV=production
+# Keep logs out of journal spam if needed: StandardOutput=append:${ROOT}/logs/bot.out
+
 [Install]
 WantedBy=default.target
 UNIT
 
-systemctl --user daemon-reload
-systemctl --user enable --now wattsapdrive
+  systemctl --user daemon-reload
+  systemctl --user enable --now "${SERVICE_NAME}.service"
+
+  # Survive logout (optional, ignore errors on non-systemd or no linger support)
+  if command -v loginctl >/dev/null 2>&1; then
+    loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || true
+  fi
+
+  green "systemd user service: ${SERVICE_NAME}.service (enabled + started)"
+  return 0
+}
 
 echo ""
-echo "✅ WattSapDrive installed!"
-echo "🌐 Open: http://localhost:3000"
-echo "📱 QR:   http://localhost:3000/qr"
-echo "🔑 Auth: YOUR_TOKEN"
+yellow "🔧 systemd…"
+if install_systemd; then
+  sleep 1
+  systemctl --user --no-pager --full status "${SERVICE_NAME}.service" | head -12 || true
+else
+  yellow "Starting in background via nohup…"
+  nohup node src/bot.js >> logs/bot.out 2>&1 &
+  echo $! > tmp/bot.pid
+  green "PID $(cat tmp/bot.pid) · logs/bot.out"
+fi
+
 echo ""
-echo "📁 Upload: curl -H 'Authorization: Bearer YOUR_TOKEN' -H 'x-file-name: myfile.txt' --data-binary @file http://localhost:3000/api/upload"
+green "✅ WattSapDrive ready"
+echo "=================================="
+info "UI:     http://${HOST}:${PORT}"
+info "QR:     http://${HOST}:${PORT}/qr"
+info "Token:  ${TOKEN}"
+echo ""
+info "Next:"
+info "  1) open QR link → WhatsApp → Linked devices → scan"
+info "  2) open UI — profile / speeds / Yazi disk should match"
+info "  3) keep WhatsApp Desktop closed on this machine (avoids 440)"
+echo ""
+info "Useful:"
+info "  systemctl --user status ${SERVICE_NAME}"
+info "  systemctl --user restart ${SERVICE_NAME}"
+info "  journalctl --user -u ${SERVICE_NAME} -f"
+info "  curl -s http://${HOST}:${PORT}/api/status | jq ."
+echo ""
