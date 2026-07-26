@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>WattSapDrive</title>
+  <meta name="theme-color" content="#25D366">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WattSapDrive">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>
 :root{
   --bg:#0e1116; --panel:#161b22; --panel-2:#0d1117; --line:#242b36;
@@ -1918,6 +1924,11 @@ async function loadDrive() {
 refreshStatus().then(loadDrive)
 setInterval(refreshStatus, 5000)
 setInterval(()=>{ if(!uploading) loadDrive() }, 10000)
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").then(r => console.log("SW registered")).catch(() => {})
+}
 </script>
 </body>
 </html>
