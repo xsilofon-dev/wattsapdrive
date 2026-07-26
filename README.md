@@ -58,6 +58,8 @@ git clone https://github.com/xsilofon-dev/wattsapdrive.git
 cd wattsapdrive
 chmod +x install.sh
 ./install.sh
+# або з назвою сховища без питання:
+# VAULT_NAME="Мій Диск" ./install.sh
 ```
 
 Інсталятор зробить:
