@@ -1,83 +1,104 @@
-# 🟢 WattSapDrive
+<p align="center">
+  <img src="docs/assets/hero.png" alt="WattSapDrive — WhatsApp as cloud storage" width="920">
+</p>
 
-**WhatsApp як безкоштовне необмежене хмарне сховище**
-
-Завантажуйте, зберігайте та отримуйте файли через звичайний WhatsApp чат. Без лімітів, безкоштовно.
+<h1 align="center">WattSapDrive</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.2.0-green" alt="version">
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="license">
-  <img src="https://img.shields.io/badge/platform-Node.js-brightgreen" alt="platform">
-  <img src="https://img.shields.io/badge/storage-WhatsApp-25D366" alt="storage">
+  <strong>WhatsApp як хмарне сховище</strong><br>
+  Файли живуть у чаті / групі WhatsApp.<br>
+  Керуєш ними через локальний веб-диск.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Baileys-WhatsApp-25D366?style=flat-square&logo=whatsapp&logoColor=white" alt="Baileys">
+  <img src="https://img.shields.io/badge/UI-localhost%3A3000-0ea5e9?style=flat-square" alt="UI">
+  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT">
 </p>
 
 ---
 
-## ✨ Можливості
+## Навіщо це
 
-- 📤 Завантаження файлів до **2GB** через веб-інтерфейс
-- 📁 Дерево папок (створення, drag-and-drop)
-- 🔒 Auth-токен для захисту API
-- 📱 WhatsApp-група для спілкування та сповіщень
-- 🔄 Автоматичне перепідключення при втраті зв'язку
-- 🖥️ Працює як systemd сервіс (автозапуск)
+WhatsApp уже вміє тримати медіа. WattSapDrive додає зверху **каталог папок**, веб-UI і API — щоб не шукати файл у стрічці повідомлень.
 
-## 🚀 Швидкий старт
+```text
+  ┌─────────────┐         ┌──────────────┐         ┌─────────────────┐
+  │  Web UI /   │  upload │   WattSap    │  send   │  WhatsApp group │
+  │  curl API   │ ──────► │   Drive bot  │ ──────► │  (your vault)   │
+  └─────────────┘         └──────────────┘         └─────────────────┘
+         ▲                        │
+         │                   catalog
+         └──────── download ◄─────┘
+```
+
+## Можливості
+
+| | |
+|---|---|
+| **Веб-диск** | дерево папок, drag-and-drop, upload цілої теки |
+| **Пошук** | за назвою або шляхом |
+| **Організація** | mkdir, rename / move, delete з каталогу |
+| **Захист** | Bearer-токен на `/api/*` |
+| **QR логін** | `/qr` → Linked Devices у WhatsApp |
+
+> Delete / rename змінюють **каталог** (`drive-config.json`). Повідомлення в WhatsApp лишаються.
+
+## Швидкий старт
 
 ```bash
 git clone https://github.com/xsilofon-dev/wattsapdrive.git
 cd wattsapdrive
-chmod +x install.sh
-./install.sh
+npm install
+node src/bot.js
 ```
 
-Відкрийте `http://localhost:3000/qr` та відскануйте QR-код у WhatsApp.
+1. Відкрий [http://127.0.0.1:3000/qr](http://127.0.0.1:3000/qr) і відскануй QR у WhatsApp → **Linked devices**.
+2. UI: [http://127.0.0.1:3000](http://127.0.0.1:3000)
+3. Токен з’явиться в статусі / `app-config.json` (не коміть його).
 
-## 📡 API
+Опційно: `./install.sh` поставить systemd user unit.
 
-**Статус:**
+## API (коротко)
+
 ```bash
-curl http://localhost:3000/api/status
-```
+# статус (без токена)
+curl http://127.0.0.1:3000/api/status
 
-**Завантажити файл:**
-```bash
-curl -X POST http://localhost:3000/api/upload \
+# каталог
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://127.0.0.1:3000/api/drive
+
+# upload
+curl -X POST http://127.0.0.1:3000/api/upload \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "x-file-name: myfile.txt" \
-  --data-binary @myfile.txt
+  -H "x-file-name: notes/hello.txt" \
+  --data-binary @hello.txt
+
+# download
+curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
+  http://127.0.0.1:3000/api/download/MESSAGE_ID
 ```
 
-**Список файлів:**
-```bash
-curl http://localhost:3000/api/files
-```
+Також: `POST /api/mkdir`, `POST /api/rename`, `DELETE /api/files/:id`, `DELETE /api/folders`.
 
-## 🛠️ Стек
+## Стек
 
-| Компонент | Технологія |
-|-----------|-----------|
-| Backend | Node.js + Express |
-| WhatsApp API | @whiskeysockets/baileys |
-| Frontend | HTML5 + CSS + JavaScript |
-| Auth | Bearer Token |
-| Сервіс | Systemd (Linux) |
+| Шар | Технологія |
+|-----|------------|
+| Backend | Node.js · Express |
+| WhatsApp | [@whiskeysockets/baileys](https://github.com/WhiskeySockets/Baileys) |
+| Frontend | один `web/index.html` |
+| Каталог | `drive-config.json` |
+| Налаштування | `app-config.json` (локально, у `.gitignore`) |
 
-## 📁 Конфігурація
+## Важливо знати
 
-`drive-config.json`:
-```json
-{
-  "auth": { "token": "YOUR_TOKEN", "enabled": true },
-  "drive": { "maxFileSize": "2gb", "provider": "whatsapp" },
-  "whatsapp": { "group": "GROUP_ID", "phone": "PHONE" }
-}
-```
+- Це **немагічний безлімітний Google Drive**. Ліміти WhatsApp (розмір медіа, сесія Linked Devices) лишаються.
+- Не тримай одночасно WhatsApp Desktop і бота на одній сесії — буде конфлікт **440**.
+- Не коміть `auth/`, `app-config.json`, токени, логи.
 
-## 🧠 Агенти
+## Ліцензія
 
-Проект створено та підтримується AI-агентами (Kilo, Cursor) з людським наглядом (xsilofon-dev).
-
-## 📄 Ліцензія
-
-MIT — використовуйте, змінюйте, розповсюджуйте.
+MIT
