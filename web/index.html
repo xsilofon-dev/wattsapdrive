@@ -221,7 +221,14 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 </head>
 <body>
 <h1><span class="logo">☁</span><span class="word">WattSapDrive</span> <span id="badge" class="status off">offline</span></h1>
-<p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/qr" target="_blank">QR-логін</a></p>
+<p class="sub">Сховище у WhatsApp · каталог <code>drive-config.json</code> · <a class="qrlink" href="/qr" target="_blank">привʼязка з телефону / QR</a></p>
+<div id="pairBanner" class="card" style="display:none;border-color:#2f6f4a">
+  <b>WhatsApp не привʼязаний</b>
+  <p class="hint" style="margin-top:6px">Активуй із телефону: WhatsApp → Повʼязані пристрої → Привʼязати за номером.</p>
+  <div class="actions" style="justify-content:flex-start;margin-top:10px">
+    <a class="btn" href="/qr" target="_blank">Отримати код</a>
+  </div>
+</div>
 
 <div class="card net-widget" id="netWidget">
   <div class="net-top">
@@ -1604,6 +1611,8 @@ async function refreshStatus() {
     const on=!!(s.connected||s.c)
     badge.textContent=on?'online':'offline'
     badge.className='status '+(on?'on':'off')
+    const pairBanner = document.getElementById('pairBanner')
+    if (pairBanner) pairBanner.style.display = (s.pair && s.pair.needsLink) ? '' : 'none'
     fillNetWidget(s)
   } catch { badge.textContent='down'; badge.className='status off' }
 }

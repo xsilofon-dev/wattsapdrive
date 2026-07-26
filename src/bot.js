@@ -167,8 +167,20 @@ function isCatalogShape(d) {
 let sock = null
 let gid = fs.existsSync(GROUP) ? fs.readFileSync(GROUP, 'utf8').trim() : null
 let qrString = ''
+let pairingCode = ''
+let pairingPhone = ''
+let pairingAt = 0
 let starting = false
 let connectedAt = 0
+
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '')
+  return digits
+}
+
+function writeAppConfig(cfg) {
+  fs.writeFileSync(APP_CFG, JSON.stringify(cfg, null, 2))
+}
 
 // WhatsApp drops the socket often (code 440 when another device grabs the
 // session), so wait for a fresh live socket instead of failing the upload.
@@ -493,7 +505,7 @@ const AUTH_ENABLED = !!(appCfg?.auth?.enabled && AUTH_TOKEN)
 app.use((req, res, next) => {
   if (!AUTH_ENABLED) return next()
   if (!req.path.startsWith('/api/')) return next()
-  if (req.path === '/api/status' || req.path === '/api/avatar' || req.path === '/api/speedtest') return next()
+  if (req.path === '/api/status' || req.path === '/api/avatar' || req.path === '/api/speedtest' || req.path === '/api/pair') return next()
   const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim()
     || String(req.query.token || '')
   if (auth !== AUTH_TOKEN) {
@@ -519,15 +531,171 @@ app.use(express.static(path.join(ROOT, 'web'), {
   }
 }))
 
-app.get('/qr', async (req, res) => {
-  if (!qrString) {
-    return res.send('<h2 style="font-family:system-ui">No QR (already linked or connecting…)</h2><meta http-equiv="refresh" content="3">')
-  }
+app.get('/qr', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store')
+  res.type('html').send(`<!doctype html>
+<html lang="uk"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WattSapDrive — привʼязка WhatsApp</title>
+<style>
+:root{--bg:#0e1116;--card:#161b22;--line:#2a3340;--txt:#e6edf3;--muted:#8b949e;--wa:#25D366}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,sans-serif;background:
+  radial-gradient(900px 500px at 80% -10%,#12321f33,transparent),var(--bg);color:var(--txt);
+  display:flex;justify-content:center;padding:28px 16px}
+.wrap{width:min(520px,100%)}
+h1{font-size:1.35rem;margin:0 0 6px} .sub{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.ok{color:var(--wa)}.warn{color:#fbbf24}.err{color:#f8737f}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.75rem;font-weight:700}
+.badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.on{background:#25D36622;color:var(--wa)}.off{background:#f8737f22;color:#f8737f}
+label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:6px}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#0d1117;color:var(--txt);font-size:1rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button,.btn{background:var(--wa);color:#04140b;border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button.secondary{background:#232b36;color:var(--txt);border:1px solid var(--line)}
+.code{font-size:2.2rem;letter-spacing:.28em;font-weight:800;text-align:center;padding:18px 8px;font-family:ui-monospace,monospace;color:var(--wa)}
+.steps{margin:0;padding-left:18px;color:var(--muted);font-size:.88rem;line-height:1.55}
+#qrBox{display:flex;justify-content:center;padding:8px;background:#fff;border-radius:12px;min-height:200px;align-items:center}
+#qrBox svg{width:220px;height:220px}
+.hint{font-size:.78rem;color:var(--muted);margin-top:10px}
+</style></head><body><div class="wrap">
+  <h1>☁ Привʼязка WhatsApp</h1>
+  <p class="sub">Активація прямо з телефону через Linked Devices — без сканування QR з монітора.</p>
+  <div class="card"><span id="st" class="badge off">перевіряю…</span>
+    <p id="msg" class="hint" style="margin-top:10px"></p></div>
+
+  <div class="card" id="pairCard">
+    <h2 style="margin:0 0 8px;font-size:1.05rem">З телефону (рекомендовано)</h2>
+    <ol class="steps">
+      <li>Введи свій номер з кодом країни (напр. <code>380639692862</code>)</li>
+      <li>Натисни «Отримати код»</li>
+      <li>У WhatsApp на телефоні: <b>Налаштування → Повʼязані пристрої → Привʼязати пристрій</b></li>
+      <li>Обери <b>«Привʼязати за номером телефону»</b> і введи код нижче</li>
+    </ol>
+    <label style="margin-top:14px">Номер WhatsApp</label>
+    <input id="phone" inputmode="tel" placeholder="380XXXXXXXXX" autocomplete="tel">
+    <div class="row">
+      <button type="button" id="btnPair">Отримати код</button>
+      <a class="btn secondary" href="/">← На диск</a>
+    </div>
+    <div id="codeWrap" hidden>
+      <div class="code" id="code">········</div>
+      <p class="hint" id="codeHint">Код дійсний кілька хвилин. Після введення на телефоні статус стане online.</p>
+    </div>
+  </div>
+
+  <div class="card" id="qrCard">
+    <h2 style="margin:0 0 8px;font-size:1.05rem">Або QR</h2>
+    <div id="qrBox">немає QR</div>
+    <p class="hint">WhatsApp → Повʼязані пристрої → Привʼязати пристрій → скануй QR.</p>
+  </div>
+</div>
+<script>
+const phoneEl=document.getElementById('phone')
+const codeWrap=document.getElementById('codeWrap')
+const codeEl=document.getElementById('code')
+const st=document.getElementById('st')
+const msg=document.getElementById('msg')
+const saved=localStorage.getItem('ws_phone')||''
+if(saved) phoneEl.value=saved
+
+async function refresh(){
+  try{
+    const s=await fetch('/api/status').then(r=>r.json())
+    if(s.me?.phone) phoneEl.value=s.me.phone.replace(/\\D/g,'') || phoneEl.value
+    if(s.net?.publicIp && s.whatsapp?.phone) {/* noop */}
+    const phoneHint=(s.pair&&s.pair.phone)||''
+    if(phoneHint && !phoneEl.value) phoneEl.value=phoneHint
+    if(s.connected){
+      st.textContent='online · привʼязано'
+      st.className='badge on'
+      msg.textContent='Можна користуватись диском: /'
+      codeWrap.hidden=true
+      document.getElementById('qrBox').textContent='вже linked'
+      return
+    }
+    st.textContent='чекаю привʼязку'
+    st.className='badge off'
+    msg.textContent='Бот запущений, але WhatsApp ще не linked.'
+    if(s.pair?.code){
+      codeWrap.hidden=false
+      codeEl.textContent=s.pair.code
+    }
+    if(s.pair?.hasQr){
+      const svg=await fetch('/qr.svg').then(r=>r.ok?r.text():'')
+      document.getElementById('qrBox').innerHTML=svg||'генерую QR…'
+    } else {
+      document.getElementById('qrBox').textContent='QR зʼявиться після старту сесії'
+    }
+  }catch(e){ st.textContent='down'; msg.textContent=String(e) }
+}
+document.getElementById('btnPair').onclick=async()=>{
+  const phone=phoneEl.value.replace(/\\D/g,'')
+  if(phone.length<10){ msg.textContent='Вкажи повний номер з кодом країни'; return }
+  localStorage.setItem('ws_phone', phone)
+  msg.textContent='Запитую код…'
+  const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})})
+  const j=await r.json().catch(()=>({}))
+  if(!r.ok){ msg.textContent=j.error||('помилка '+r.status); return }
+  codeWrap.hidden=false
+  codeEl.textContent=j.code
+  msg.textContent='Введи цей код у WhatsApp на телефоні'
+  refresh()
+}
+refresh(); setInterval(refresh,2500)
+</script></body></html>`)
+})
+
+app.get('/qr.svg', async (req, res) => {
+  if (!qrString) return res.status(404).type('text').send('')
   try {
-    const svg = await QRCode.toString(qrString, { type: 'svg', width: 240 })
-    res.send(`<!doctype html><html><body style="margin:0;background:#0f0f14;display:flex;justify-content:center;align-items:center;min-height:100vh">${svg}</body></html>`)
+    const svg = await QRCode.toString(qrString, { type: 'svg', width: 240, margin: 1 })
+    res.type('image/svg+xml').set('Cache-Control', 'no-store').send(svg)
   } catch (e) {
-    res.status(500).send('QR error: ' + e.message)
+    res.status(500).send(e.message)
+  }
+})
+
+app.get('/api/pair', (req, res) => {
+  res.json({
+    code: pairingCode || null,
+    phone: pairingPhone || null,
+    at: pairingAt || null,
+    hasQr: !!qrString,
+    connected: !!sock?.user?.id,
+    registered: !!sock?.authState?.creds?.registered
+  })
+})
+
+app.post('/api/pair', express.json({ limit: '8kb' }), async (req, res) => {
+  try {
+    if (sock?.user?.id || sock?.authState?.creds?.registered) {
+      return res.status(409).json({ error: 'Вже привʼязано. Щоб перелогінитись — видали папку auth/ і перезапусти.' })
+    }
+    if (!sock) return res.status(503).json({ error: 'Сокет ще не готовий, зачекай 2–3 с і спробуй знову' })
+
+    const phone = normalizePhone(req.body?.phone || appCfg?.whatsapp?.phone || '')
+    if (phone.length < 10 || phone.length > 15) {
+      return res.status(400).json({ error: 'Номер: тільки цифри з кодом країни, напр. 380639692862' })
+    }
+
+    // persist for next boots / UI default
+    try {
+      const cur = readAppConfig()
+      cur.whatsapp = { ...(cur.whatsapp || {}), phone }
+      writeAppConfig(cur)
+    } catch {}
+
+    pairingPhone = phone
+    const code = await sock.requestPairingCode(phone)
+    pairingCode = String(code || '').replace(/(\d{4})(\d{4})/, '$1-$2')
+    pairingAt = Date.now()
+    console.log(`Pairing code for +${phone}: ${pairingCode}`)
+    res.json({ ok: true, phone, code: pairingCode, hint: 'WhatsApp → Linked devices → Link with phone number' })
+  } catch (e) {
+    console.error('pair fail:', e.message)
+    res.status(500).json({ error: e.message })
   }
 })
 
@@ -543,6 +711,7 @@ app.get('/api/status', async (req, res) => {
   } else {
     refreshPublicIp(false).catch(() => {})
   }
+  const cfgPhone = normalizePhone(readAppConfig()?.whatsapp?.phone || '')
   res.json({
     connected: !!sock?.user?.id,
     c: !!sock?.user?.id,
@@ -575,6 +744,13 @@ app.get('/api/status', async (req, res) => {
       publicIp: profileCache.publicIp,
       waUp: transferStats.waUp,
       waDown: transferStats.waDown
+    },
+    pair: {
+      needsLink: !(sock?.user?.id || sock?.authState?.creds?.registered),
+      code: pairingCode || null,
+      phone: pairingPhone || cfgPhone || null,
+      hasQr: !!qrString,
+      linkUrl: '/qr'
     }
   })
 })
@@ -1128,6 +1304,8 @@ async function start() {
       }
       if (connection === 'open') {
         qrString = ''
+        pairingCode = ''
+        pairingAt = 0
         connectedAt = Date.now()
         console.log('WhatsApp connected:', sock.user?.id)
         refreshProfile(true).catch(() => {})
