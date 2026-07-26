@@ -99,6 +99,30 @@ curl -OJ -H "Authorization: Bearer YOUR_TOKEN" \
 - Не тримай одночасно WhatsApp Desktop і бота на одній сесії — буде конфлікт **440**.
 - Не коміть `auth/`, `app-config.json`, токени, логи.
 
+## Contributors
+
+<p align="center">
+  <a href="https://github.com/xsilofon-dev"><img src="https://github.com/xsilofon-dev.png?size=96" width="96" height="96" alt="xsilofon-dev" style="border-radius:50%"/></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/cursoragent"><img src="https://github.com/cursoragent.png?size=96" width="96" height="96" alt="Cursor Agent" style="border-radius:50%"/></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/deepseek-ai"><img src="https://github.com/deepseek-ai.png?size=96" width="96" height="96" alt="DeepSeek" style="border-radius:50%"/></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/Kilo-Org"><img src="https://github.com/Kilo-Org.png?size=96" width="96" height="96" alt="Kilo Code" style="border-radius:50%"/></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/xsilofon-dev"><b>xsilofon-dev</b></a>
+  ·
+  <a href="https://github.com/cursoragent"><b>Cursor Agent</b></a>
+  ·
+  <a href="https://github.com/deepseek-ai"><b>DeepSeek</b></a>
+  ·
+  <a href="https://github.com/Kilo-Org"><b>Kilo Code</b></a>
+</p>
+
+Детальніше: [CONTRIBUTORS.md](CONTRIBUTORS.md)
+
 ## Ліцензія
 
 MIT
