@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>WattSapDrive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui;background:#0f0f14;color:#e0e0e0;max-width:960px;margin:0 auto;padding:20px}
+h1{background:linear-gradient(135deg,#25D366,#128C7E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:2rem;margin-bottom:24px}
+.card{background:#1a1a24;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #2a2a38}
+.upload-zone{border:2px dashed #25D366;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover{background:#25D36611}
+.upload-zone.drag{background:#25D36622;border-color:#128C7E}
+input[type="file"]{display:none}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #2a2a38}
+th{color:#25D366;font-size:0.85rem;text-transform:uppercase;letter-spacing:.5px}
+td{font-size:0.9rem}
+.size{color:#888;font-family:monospace}
+.btn{background:#25D366;color:#000;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{background:#128C7E}
+.status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.8rem}
+.online{background:#25D36622;color:#25D366}
+.loading{opacity:.5;pointer-events:none}
+</style></head>
+<body>
+<h1>🟢 WattSapDrive</h1>
+<div class="card">
+  <div class="upload-zone" id="dropzone">
+    <p style="font-size:3rem">📤</p>
+    <p>Drop files or click to upload</p>
+    <p style="color:#888;font-size:0.8rem;margin-top:8px">Max 2GB per file</p>
+    <input type="file" id="fileInput" multiple>
+  </div>
+</div>
+<div class="card">
+  <h2 style="color:#888;text-transform:uppercase;font-size:0.85rem;margin-bottom:12px">📁 Files</h2>
+  <table id="filesTable"><thead><tr><th>Name</th><th>Size</th><th>Type</th></tr></thead><tbody></tbody></table>
+  <p id="emptyMsg" style="text-align:center;color:#555;padding:20px">No files yet. Upload something!</p>
+</div>
+<div style="text-align:center;color:#555;font-size:0.75rem;margin-top:20px">Powered by WhatsApp • WattSapDrive v0.1</div>
+<script>
+const dropzone = document.getElementById('dropzone')
+const fileInput = document.getElementById('fileInput')
+const table = document.getElementById('filesTable').querySelector('tbody')
+const emptyMsg = document.getElementById('emptyMsg')
+
+dropzone.onclick = () => fileInput.click()
+dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('drag') }
+dropzone.ondragleave = () => dropzone.classList.remove('drag')
+dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove('drag'); handleFiles(e.dataTransfer.files) }
+fileInput.onchange = () => handleFiles(fileInput.files)
+
+async function handleFiles(files) {
+  for (const file of files) {
+    const data = new Uint8Array(await file.arrayBuffer())
+    await fetch('/api/upload', { method: 'POST', body: data, headers: { 'x-file-name': file.name } })
+  }
+  loadFiles()
+}
+
+async function loadFiles() {
+  try {
+    const files = await fetch('/api/files').then(r => r.json())
+    table.innerHTML = ''
+    if (!files.length) { emptyMsg.style.display = 'block'; return }
+    emptyMsg.style.display = 'none'
+    files.forEach(f => table.innerHTML += `<tr>
+      <td>📄 ${f.name}</td>
+      <td class="size">${fmtSize(f.size)}</td>
+      <td style="color:#888">${f.mime || '-'}</td>
+    </tr>`)
+  } catch(e) { console.error(e) }
+}
+
+function fmtSize(bytes) {
+  if (!bytes) return '?'
+  const u = ['B','KB','MB','GB']
+  let i = 0
+  while (bytes >= 1024 && i < 3) { bytes /= 1024; i++ }
+  return bytes.toFixed(1) + ' ' + u[i]
+}
+
+loadFiles()
+</script>
+</body></html>

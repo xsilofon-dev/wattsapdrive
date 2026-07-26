@@ -1,0 +1,18 @@
+{
+  "name": "wattsapdrive",
+  "version": "1.0.0",
+  "description": "WhatsApp as free unlimited cloud storage",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/bot.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc13",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
