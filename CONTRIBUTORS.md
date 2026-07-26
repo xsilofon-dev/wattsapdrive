@@ -10,3 +10,4 @@ WattSapDrive зібраний людьми й агентами разом.
 | **Kilo Code** | середовище агента (Kilocode) | [@Kilo-Org](https://github.com/Kilo-Org) |
 - Cursor Agent: web UI, upload progress, GitHub landing, fixes
 - DeepSeek: agent model used through Kilo Code for implementation passes
+- Kilo Code: agent runtime / Kilocode environment
