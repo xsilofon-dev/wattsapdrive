@@ -1,7 +1,7 @@
 {
   "name": "wattsapdrive",
-  "version": "0.3.0",
-  "description": "WhatsApp as free cloud storage — web disk, chunked uploads, live speeds",
+  "version": "0.3.2",
+  "description": "WhatsApp as free cloud storage \u2014 web disk, chunked uploads, live speeds",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
@@ -24,6 +24,7 @@
     "express": "^5.2.1",
     "pino": "^10.3.1",
     "qrcode": "^1.5.4",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.35.3"
   }
 }

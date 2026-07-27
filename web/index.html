@@ -23,6 +23,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:
   radial-gradient(900px 500px at -10% 0%,#0f2a1c33,transparent),
   var(--bg);
   color:var(--txt);max-width:1080px;margin:0 auto;padding:22px;min-height:100vh}
+body.ws-app{max-width:none !important;margin:0 !important;padding:0 !important;min-height:100% !important}
 ::selection{background:#25D36644}
 h1{display:flex;align-items:center;gap:10px;font-size:1.7rem;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
 h1 .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--wa),var(--wa-deep));
@@ -162,13 +163,22 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 }
 .yazi{
   display:grid;grid-template-columns:minmax(120px,.9fr) minmax(200px,1.35fr) minmax(160px,1.1fr);
-  gap:0;height:min(62vh,560px);border:1px solid #1e2636;border-radius:8px;overflow:hidden;
+  gap:0;min-height:320px;height:70vh;border:1px solid #1e2636;border-radius:8px;overflow:hidden;
   background:#0a0d13;font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;font-size:.84rem
+}
+body.ws-app .yazi, .yazi.gallery-mode{
+  height:auto !important;max-height:none !important;min-height:0 !important;
+}
+html.ws-app, body.ws-app { height:100% !important; max-height:100% !important; overflow:hidden !important; }
+body.ws-app .card-disk {
+  position:fixed !important; left:0 !important; top:0 !important; right:0 !important; bottom:0 !important;
+  width:100% !important; height:100% !important; max-height:none !important;
+  margin:0 !important; border:0 !important; border-radius:0 !important; padding:0 !important;
 }
 .yazi-col{overflow:auto;padding:4px 0;min-width:0}
 .yazi-col+.yazi-col{border-left:1px solid #151b28}
 .yazi-main{background:#0c1018}
-.yazi-prev{color:#9aa4b2;background:#090c12}
+.yazi-prev{color:#9aa4b2;background:#090c12;overflow:auto}
 .yazi-row{
   display:flex;align-items:center;gap:8px;padding:3px 10px;cursor:pointer;user-select:none;
   white-space:nowrap;overflow:hidden;border-radius:0;color:#c8d0da
@@ -199,6 +209,74 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 .yazi-prev-body{padding:4px 12px 12px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#a8b3c2;font-size:.8rem}
 .yazi-prev-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px 12px}
 .yazi-prev-actions .btn{padding:5px 10px;font-size:.78rem;border-radius:6px}
+.thumb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;padding:8px 10px 12px}
+.thumb-card{
+  position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#1a2330;
+  border:1px solid #2a3942;cursor:pointer;padding:0
+}
+.thumb-card:hover,.thumb-card.sel{border-color:#25D366;box-shadow:0 0 0 1px #25D36655}
+.thumb-card img{width:100%;height:100%;object-fit:cover;display:block;background:#0c1018}
+.thumb-card .ph{
+  width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;color:#c8d0da;font-size:1.6rem;background:#243044;box-sizing:border-box
+}
+.thumb-card.vid .ph{
+  background:linear-gradient(160deg,#1e3a5f 0%,#2a4a6e 55%,#1a2f4a 100%);
+  color:#e8eef7;border:0
+}
+.thumb-card .ph .ph-label{
+  font-size:.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:#7dd3fc;opacity:.95
+}
+.thumb-card .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:3px 5px;font-size:.62rem;
+  background:linear-gradient(transparent,#000c);color:#e8eef7;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis
+}
+.thumb-more{
+  grid-column:1 / -1;
+  position:relative;
+  z-index:6;
+  margin:6px 2px 10px;
+  padding:16px 12px;
+  border-radius:10px;
+  border:1px solid #25D36699;
+  background:#13261a;
+  color:#25D366;
+  font-weight:700;
+  font-size:1rem;
+  cursor:pointer;
+  width:100%;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:rgba(37,211,102,.25);
+  touch-action:manipulation;
+  user-select:none
+}
+.thumb-more:active{background:#1a3d28;transform:scale(.99)}
+.thumb-more .tm-sub{display:block;margin-top:4px;font-size:.75rem;font-weight:500;color:#9aa4b2;pointer-events:none}
+.lightbox{
+  display:none;position:fixed;inset:0;z-index:80;background:#000e;
+  align-items:center;justify-content:center;padding:12px;flex-direction:column;gap:10px
+}
+.lightbox.show{display:flex}
+.lightbox img{max-width:100%;max-height:calc(100dvh - 88px);object-fit:contain;border-radius:8px}
+.lightbox .lb-meta{color:#c8d0da;font-size:.85rem;text-align:center}
+.lightbox .lb-close{position:absolute;top:10px;right:12px}
+body.ws-app{padding-bottom:0;margin:0;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+html.ws-app{height:100%;height:100dvh;overflow:hidden}
+body.ws-app > h1{flex:0 0 auto;margin:6px 10px 2px;font-size:1.05rem}
+body.ws-app > .sub{display:none}
+body.ws-app .native-prog{bottom:12px}
+.native-prog{
+  display:none;position:fixed;left:12px;right:12px;bottom:72px;z-index:60;background:#111b21ee;
+  border:1px solid #2a3942;border-radius:12px;padding:12px 14px;backdrop-filter:blur(6px);
+  box-shadow:0 12px 40px #0008;font-size:.9rem
+}
+.native-prog.show{display:block}
+.native-prog .np-title{font-weight:700;margin-bottom:6px}
+.native-prog .np-bar{height:8px;background:#1a2330;border-radius:99px;overflow:hidden;margin:8px 0}
+.native-prog .np-fill{height:100%;width:0%;background:#25D366;transition:width .2s}
+.native-prog .np-meta{color:var(--muted);font-size:.8rem}
 .yazi-foot{
   display:flex;gap:14px;flex-wrap:wrap;padding:8px 4px 0;font-family:ui-monospace,Menlo,Consolas,monospace;
   font-size:.75rem;color:#6b7585
@@ -206,13 +284,69 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 .yazi-foot b{color:#c8d0da;font-weight:600}
 #empty{display:none}
 @media (max-width:820px){
-  .yazi{grid-template-columns:1fr 1.2fr;height:min(55vh,480px)}
+  .yazi{grid-template-columns:1fr 1.2fr;height:min(68vh,640px)}
   .yazi-col:first-child{display:none}
 }
-@media (max-width:560px){
-  .yazi{grid-template-columns:1fr}
-  .yazi-prev{display:none}
+@media (max-width:920px){
+  /* диск займає майже весь екран телефону */
+  body.ws-app .card:not(.card-disk){display:none !important}
+  body.ws-app .card-disk{
+    flex:1 1 auto;min-height:0;margin:0;border-radius:0;border:0;
+    display:flex;flex-direction:column;
+    padding:6px 6px 0;
+  }
+  body.ws-app .card-disk .toolbar{flex-wrap:wrap;gap:6px;flex:0 0 auto}
+  body.ws-app .yazi-path{margin:2px 0;flex:0 0 auto}
+  body.ws-app .yazi-foot{flex:0 0 auto;padding:4px 2px 6px}
+
+  .yazi{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(0,1fr);
+    flex:1 1 auto;
+    height:auto !important;
+    min-height:50vh;
+    max-height:none;
+  }
+  body.ws-app .yazi{
+    flex:1 1 0 !important;
+    min-height:0 !important;
+    height:auto !important;
+    max-height:none !important;
+    border-radius:10px;
+  }
+  body.ws-app .yazi-foot{flex:0 0 auto}
+  body.ws-app .yazi-path{flex:0 0 auto}
+  body.ws-app .card-disk .toolbar{flex:0 0 auto}
+  /* превʼю ховаємо — галерея тільки в main на весь блок */
+  .yazi-prev{display:none !important}
+  .yazi-main{
+    min-height:0;height:100%;overflow:auto;-webkit-overflow-scrolling:touch;
+  }
+  .yazi-main .thumb-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-auto-rows:auto;
+    align-content:start;
+    gap:3px;padding:4px 4px 10px;
+  }
+  .thumb-card{
+    border-radius:4px;
+    aspect-ratio:1 / 1;
+    width:100%;
+    height:auto;
+    max-height:none;
+  }
+  .thumb-card img,.thumb-card .ph{width:100%;height:100%;object-fit:cover}
+  .card-disk{padding:10px}
+  .yazi-path{font-size:.78rem}
 }
+/* —— share modal —— */
+.share-overlay{position:fixed;inset:0;background:#0008;backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.share-box{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 20px 60px #000a}
+.share-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.share-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--panel-2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+.share-tab{flex:1;background:transparent;border:0;color:var(--muted);padding:8px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.85rem}
+.share-tab.active{background:var(--wa);color:#04140b}
 /* scrollbars */
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-thumb{background:#2a3340;border-radius:8px;border:2px solid transparent;background-clip:content-box}
@@ -352,6 +486,61 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
   <p id="empty">Поки порожньо</p>
 </div>
 
+<div id="nativeProg" class="native-prog" aria-live="polite">
+  <div class="np-title" id="npTitle">Вивантаження…</div>
+  <div class="np-bar"><div class="np-fill" id="npFill"></div></div>
+  <div class="np-meta" id="npMeta">0 / 0</div>
+</div>
+
+<div id="lightbox" class="lightbox">
+  <button type="button" class="btn secondary lb-close" id="lbClose">✕</button>
+  <img id="lbImg" alt="">
+  <div class="lb-meta" id="lbMeta"></div>
+</div>
+
+<div id="shareModal" class="share-overlay" style="display:none">
+  <div class="share-box">
+    <div class="share-head">
+      <b>↗ Поділитись файлом</b>
+      <button type="button" class="iconbtn" id="shareClose">✕</button>
+    </div>
+    <p class="hint" id="shareFile" style="margin:0 0 12px"></p>
+
+    <div class="share-tabs">
+      <button type="button" class="share-tab active" data-tab="wa">У WhatsApp другу</button>
+      <button type="button" class="share-tab" data-tab="link">Посилання (LAN)</button>
+    </div>
+
+    <div class="share-pane" id="paneWa">
+      <label class="hint">Номер друга (з кодом країни)</label>
+      <input class="search" id="sharedPhone" inputmode="numeric" placeholder="380XXXXXXXXX">
+      <label class="hint" style="margin-top:8px">Підпис (необовʼязково)</label>
+      <input class="search" id="shareNote" placeholder="Тримай файл 🙂">
+      <div class="actions" style="justify-content:flex-start;margin-top:12px">
+        <button type="button" class="btn" id="shareSendWa">Надіслати</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Друг отримає <b>тільки цей файл</b> у свій чат. Доступу до диска не буде.</p>
+    </div>
+
+    <div class="share-pane" id="paneLink" style="display:none">
+      <label class="hint">Час життя посилання</label>
+      <select class="search" id="shareTtl">
+        <option value="60">1 година</option>
+        <option value="360">6 годин</option>
+        <option value="1440">24 години</option>
+      </select>
+      <div class="actions" style="justify-content:flex-start;margin-top:12px">
+        <button type="button" class="btn" id="shareMakeLink">Створити посилання</button>
+        <button type="button" class="btn secondary" id="shareCopyLink" hidden>Копіювати</button>
+      </div>
+      <input class="search" id="shareLinkOut" readonly hidden style="margin-top:10px">
+      <p class="hint" style="margin-top:8px">Працює для того, хто дістає цей сервер (та сама мережа/VPN). Через інтернет — лише якщо порт відкритий.</p>
+    </div>
+
+    <p id="shareMsg" class="hint" style="margin-top:10px"></p>
+  </div>
+</div>
+
 <script>
 const dropzone = document.getElementById('dropzone')
 const fileInput = document.getElementById('fileInput')
@@ -419,6 +608,8 @@ let searchQ = ''
 // Yazi miller columns: current folder + selected entry key
 let cwd = localStorage.getItem('ws_cwd') || ''
 let selectedKey = localStorage.getItem('ws_sel') || ''
+let galleryLimit = 0
+let galleryLimitCwd = null
 function persistNav() {
   try {
     localStorage.setItem('ws_cwd', cwd)
@@ -488,6 +679,79 @@ document.getElementById('btnFolder').onclick = e => { e.stopPropagation(); pickF
 document.getElementById('btnMkdir').onclick = e => { e.stopPropagation(); createFolder() }
 document.getElementById('btnMkdir2').onclick = () => createFolder()
 document.getElementById('btnRefresh').onclick = () => loadDrive()
+
+// —— share file modal ——
+let shareFileObj = null
+const shareModal = document.getElementById('shareModal')
+function openShare(f) {
+  shareFileObj = f
+  document.getElementById('shareFile').textContent = (f.name || '').split('/').pop() + ' · ' + fmtSize(f.size || 0)
+  document.getElementById('shareMsg').textContent = ''
+  document.getElementById('sharedPhone').value = localStorage.getItem('ws_friend') || ''
+  document.getElementById('shareNote').value = ''
+  const out = document.getElementById('shareLinkOut'); out.hidden = true; out.value = ''
+  document.getElementById('shareCopyLink').hidden = true
+  switchShareTab('wa')
+  shareModal.style.display = 'flex'
+}
+function closeShare() { shareModal.style.display = 'none'; shareFileObj = null }
+function switchShareTab(tab) {
+  document.querySelectorAll('.share-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab))
+  document.getElementById('paneWa').style.display = tab === 'wa' ? '' : 'none'
+  document.getElementById('paneLink').style.display = tab === 'link' ? '' : 'none'
+}
+document.getElementById('shareClose').onclick = closeShare
+shareModal.addEventListener('click', e => { if (e.target === shareModal) closeShare() })
+document.querySelectorAll('.share-tab').forEach(t => t.onclick = () => switchShareTab(t.dataset.tab))
+
+document.getElementById('shareSendWa').onclick = async () => {
+  if (!shareFileObj) return
+  const phone = (document.getElementById('sharedPhone').value || '').replace(/\D/g, '')
+  const note = document.getElementById('shareNote').value || ''
+  const sm = document.getElementById('shareMsg')
+  if (phone.length < 10) { sm.className = 'err'; sm.textContent = 'Вкажи номер з кодом країни'; return }
+  localStorage.setItem('ws_friend', phone)
+  const btn = document.getElementById('shareSendWa')
+  btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Надсилаю…'
+  sm.className = 'hint'; sm.textContent = 'Відправляю файл у WhatsApp…'
+  try {
+    const r = await api('/api/share', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: shareFileObj.id, phone, note })
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || r.status)
+    sm.className = 'okmsg'
+    sm.textContent = j.mode === 'wa-parts'
+      ? `Надіслано ${j.parts} частин другові ✓`
+      : 'Надіслано другові ✓'
+  } catch (e) { sm.className = 'err'; sm.textContent = String(e.message || e) }
+  finally { btn.disabled = false; btn.textContent = prev }
+}
+
+document.getElementById('shareMakeLink').onclick = async () => {
+  if (!shareFileObj) return
+  const ttlMin = parseInt(document.getElementById('shareTtl').value, 10) || 60
+  const sm = document.getElementById('shareMsg')
+  sm.className = 'hint'; sm.textContent = 'Створюю посилання…'
+  try {
+    const r = await api('/api/share/link', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: shareFileObj.id, ttlMin })
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || r.status)
+    const out = document.getElementById('shareLinkOut')
+    out.value = j.url; out.hidden = false
+    document.getElementById('shareCopyLink').hidden = false
+    sm.className = 'okmsg'; sm.textContent = 'Діє до ' + fmtDate(j.expiresAt)
+  } catch (e) { sm.className = 'err'; sm.textContent = String(e.message || e) }
+}
+document.getElementById('shareCopyLink').onclick = async () => {
+  const out = document.getElementById('shareLinkOut')
+  try { await navigator.clipboard.writeText(out.value); document.getElementById('shareMsg').textContent = 'Скопійовано' }
+  catch { out.select() }
+}
 
 document.getElementById('btnExport').onclick = async () => {
   try {
@@ -605,6 +869,13 @@ function updateScanMeta(stats) {
 }
 
 async function pickFolder() {
+  // Android app: native folder picker (WebView не вміє webkitdirectory)
+  if (navigator.userAgent.includes('WattSapDriveApp') && window.WattSapAndroid?.pickFolderForUpload) {
+    msg.className = 'okmsg'
+    msg.textContent = 'Обери папку в системному діалозі…'
+    window.WattSapAndroid.pickFolderForUpload()
+    return
+  }
   // Chromium File System Access API — справжній вибір папки (не файловий діалог)
   if (typeof window.showDirectoryPicker === 'function') {
     try {
@@ -1399,6 +1670,144 @@ function fillFolderSelect(folders) {
   targetFolder.value = opts.some(o=>o.path===cur) ? cur : ''
 }
 
+function isImgFile(f) {
+  if (!f) return false
+  const m = String(f.mime || '').toLowerCase()
+  const n = String(f.name || '').toLowerCase()
+  return m.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp)$/i.test(n)
+}
+function isVidFile(f) {
+  if (!f) return false
+  const m = String(f.mime || '').toLowerCase()
+  const n = String(f.name || '').toLowerCase()
+  return m.startsWith('video/') || /\.(mp4|mov|webm|mkv|3gp)$/i.test(n)
+}
+function thumbUrl(id) {
+  return `/api/thumb/${encodeURIComponent(id)}?token=${encodeURIComponent(API_TOKEN || '')}`
+}
+
+function loadMoreGallery(step) {
+  const n = Math.max(12, Number(step) || 48)
+  galleryLimit = (galleryLimit || n) + n
+  const main = document.getElementById('yaziMain')
+  const keep = main ? main.scrollTop : 0
+  renderDrive()
+  requestAnimationFrame(() => {
+    const m = document.getElementById('yaziMain')
+    if (m) m.scrollTop = keep
+    if (typeof fitAppDisk === 'function') fitAppDisk()
+  })
+}
+window.loadMoreGallery = loadMoreGallery
+
+if (!window.__wsMoreBound) {
+  window.__wsMoreBound = true
+  let lastMoreAt = 0
+  document.addEventListener('click', (e) => {
+    const t = e.target && e.target.closest && e.target.closest('.thumb-more')
+    if (!t) return
+    e.preventDefault()
+    e.stopPropagation()
+    const now = Date.now()
+    if (now - lastMoreAt < 400) return
+    lastMoreAt = now
+    loadMoreGallery(Number(t.dataset.step || 48))
+  }, true)
+}
+
+function renderThumbGrid(files, pageSize = 60) {
+  const wrap = document.createElement('div')
+  wrap.className = 'thumb-grid'
+  const media = files.filter(f => f && f.hasMedia)
+  if (galleryLimitCwd !== cwd || !galleryLimit) {
+    galleryLimit = pageSize
+    galleryLimitCwd = cwd
+  }
+  const limit = Math.min(galleryLimit, media.length)
+  const list = media.slice(0, limit)
+  if (!list.length) {
+    const emptyEl = document.createElement('div')
+    emptyEl.className = 'yazi-empty'
+    emptyEl.textContent = 'немає файлів з превʼю'
+    return emptyEl
+  }
+  for (const f of list) {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'thumb-card' + (selectedKey === ('f:' + f.id) ? ' sel' : '')
+    btn.title = f.name
+    if (isVidFile(f)) btn.classList.add('vid')
+    if (isImgFile(f)) {
+      const img = document.createElement('img')
+      img.loading = 'lazy'
+      img.alt = f.name
+      img.src = thumbUrl(f.id)
+      img.onerror = () => {
+        const ph = document.createElement('div')
+        ph.className = 'ph'
+        ph.innerHTML = '<span>🖼</span><span class="ph-label">фото</span>'
+        img.replaceWith(ph)
+      }
+      btn.appendChild(img)
+    } else {
+      const ph = document.createElement('div')
+      ph.className = 'ph'
+      if (isVidFile(f)) ph.innerHTML = '<span>▶</span><span class="ph-label">відео</span>'
+      else ph.textContent = fileIcon(f.name)
+      btn.appendChild(ph)
+    }
+    const cap = document.createElement('div')
+    cap.className = 'cap'
+    cap.textContent = isVidFile(f) ? 'відео' : f.name
+    btn.appendChild(cap)
+    btn.onclick = () => {
+      selectedKey = 'f:' + f.id
+      persistNav()
+      if (isImgFile(f) && f.hasMedia) openLightbox(f)
+      else renderDrive()
+    }
+    wrap.appendChild(btn)
+  }
+  const left = media.length - limit
+  if (left > 0) {
+    const step = Math.min(pageSize, left)
+    const more = document.createElement('button')
+    more.type = 'button'
+    more.className = 'thumb-more'
+    more.dataset.step = String(step)
+    more.innerHTML = `↓ Ще ${step} файлів<span class="tm-sub">показано ${limit} з ${media.length} · залишилось ${left}</span>`
+    wrap.appendChild(more)
+  }
+  return wrap
+}
+
+function openLightbox(f) {
+  const box = document.getElementById('lightbox')
+  const img = document.getElementById('lbImg')
+  const meta = document.getElementById('lbMeta')
+  if (!box || !img) return
+  meta.textContent = `${f.name} · ${fmtSize(f.size || 0)}`
+  img.src = thumbUrl(f.id)
+  // try full download preview for clearer look (still cached by browser)
+  const full = `/api/download/${encodeURIComponent(f.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
+  const probe = new Image()
+  probe.onload = () => { img.src = full }
+  probe.onerror = () => {}
+  probe.src = full
+  box.classList.add('show')
+}
+function closeLightbox() {
+  document.getElementById('lightbox')?.classList.remove('show')
+}
+document.getElementById('lbClose')?.addEventListener('click', closeLightbox)
+document.getElementById('lightbox')?.addEventListener('click', e => {
+  if (e.target.id === 'lightbox') closeLightbox()
+})
+if (navigator.userAgent.includes('WattSapDriveApp')) {
+  document.documentElement.classList.add('ws-app')
+  document.body.classList.add('ws-app')
+}
+
 function renderPreview(ent, tree) {
   yaziPrev.innerHTML = ''
   if (!ent) {
@@ -1407,9 +1816,11 @@ function renderPreview(ent, tree) {
   }
   if (ent.kind === 'dir') {
     const kids = entriesOf(ent.node)
+    const files = kids.filter(k => k.kind === 'file').map(k => k.file)
+    const dirs = kids.filter(k => k.kind === 'dir')
     const head = document.createElement('div')
     head.className = 'yazi-prev-head'
-    head.textContent = `/${ent.path || ''} · ${kids.length}`
+    head.textContent = `/${ent.path || ''} · 📁 ${dirs.length} · 📄 ${files.length}`
     yaziPrev.appendChild(head)
     if (!kids.length) {
       const emptyEl = document.createElement('div')
@@ -1417,18 +1828,17 @@ function renderPreview(ent, tree) {
       emptyEl.textContent = '(порожня папка)'
       yaziPrev.appendChild(emptyEl)
     } else {
-      for (const k of kids.slice(0, 80)) {
-        yaziPrev.appendChild(makeYaziRow(k, {
-          selected: false,
-          onClick: () => { selectedKey = k.key; if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; } persistNav(); renderDrive() },
-          onDbl: () => { if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; persistNav(); renderDrive() } }
-        }))
-      }
-      if (kids.length > 80) {
-        const more = document.createElement('div')
-        more.className = 'yazi-empty'
-        more.textContent = `…ще ${kids.length - 80}`
-        yaziPrev.appendChild(more)
+      // gallery of images / files in this folder
+      const mediaish = files.filter(f => isImgFile(f) || isVidFile(f) || f.hasMedia)
+      if (mediaish.length) yaziPrev.appendChild(renderThumbGrid(mediaish, 80))
+      else {
+        for (const k of kids.slice(0, 80)) {
+          yaziPrev.appendChild(makeYaziRow(k, {
+            selected: false,
+            onClick: () => { selectedKey = k.key; if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; } persistNav(); renderDrive() },
+            onDbl: () => { if (k.kind === 'dir') { cwd = k.path; selectedKey = ''; persistNav(); renderDrive() } }
+          }))
+        }
       }
     }
     const acts = document.createElement('div')
@@ -1456,6 +1866,15 @@ function renderPreview(ent, tree) {
   const head = document.createElement('div')
   head.className = 'yazi-prev-head'
   head.textContent = 'файл'
+  yaziPrev.appendChild(head)
+  if (f.hasMedia && isImgFile(f)) {
+    const img = document.createElement('img')
+    img.alt = f.name
+    img.style.cssText = 'width:100%;max-height:220px;object-fit:contain;background:#0c1018;border-radius:8px;margin:4px 10px 8px;display:block;width:calc(100% - 20px)'
+    img.src = thumbUrl(f.id)
+    img.onerror = () => { img.remove() }
+    yaziPrev.appendChild(img)
+  }
   const body = document.createElement('div')
   body.className = 'yazi-prev-body'
   body.textContent = [
@@ -1481,6 +1900,10 @@ function renderPreview(ent, tree) {
       downloadFileLive(f)
     })
     acts.appendChild(a)
+    const sh = document.createElement('button')
+    sh.type = 'button'; sh.className = 'btn secondary'; sh.textContent = '↗ Поділитись'
+    sh.onclick = () => openShare(f)
+    acts.appendChild(sh)
   }
   const ren = document.createElement('button')
   ren.type = 'button'; ren.className = 'btn secondary'; ren.textContent = '✎ Rename'
@@ -1490,7 +1913,6 @@ function renderPreview(ent, tree) {
   del.type = 'button'; del.className = 'btn danger'; del.textContent = '🗑'
   del.onclick = () => deleteFile(f.id, f.path || f.name)
   acts.appendChild(del)
-  yaziPrev.appendChild(head)
   yaziPrev.appendChild(body)
   yaziPrev.appendChild(acts)
 }
@@ -1600,19 +2022,42 @@ function renderDrive() {
       : '(порожньо)'
     yaziMain.innerHTML = `<div class="yazi-empty" style="white-space:pre-wrap">${escapeHtml(hint)}</div>`
     empty.style.display = 'none'
+    document.getElementById('tree')?.classList.remove('gallery-mode')
   } else {
     empty.style.display = 'none'
-    for (const ent of list) {
+    const fileEnts = list.filter(e => e.kind === 'file')
+    const dirEnts = list.filter(e => e.kind === 'dir')
+    const imgHeavy = fileEnts.length >= 4 &&
+      fileEnts.filter(e => isImgFile(e.file) || isVidFile(e.file)).length >= Math.ceil(fileEnts.length * 0.4)
+    const mobile = window.matchMedia('(max-width:920px)').matches
+    document.getElementById('tree')?.classList.toggle('gallery-mode', imgHeavy || (mobile && fileEnts.some(e => isImgFile(e.file))))
+
+    // mobile: single tap opens folder (не чекаємо dblclick)
+    const openDir = (path) => { cwd = path; selectedKey = ''; persistNav(); renderDrive() }
+
+    for (const ent of dirEnts) {
       yaziMain.appendChild(makeYaziRow(ent, {
         selected: ent.key === selectedKey,
-        onClick: () => { selectedKey = ent.key; persistNav(); renderDrive() },
-        onDbl: () => {
-          if (ent.kind === 'dir') { cwd = ent.path; selectedKey = ''; persistNav(); renderDrive() }
-          else if (ent.file?.hasMedia) {
-            downloadFileLive(ent.file)
-          }
-        }
+        onClick: () => {
+          if (mobile) openDir(ent.path)
+          else { selectedKey = ent.key; persistNav(); renderDrive() }
+        },
+        onDbl: () => openDir(ent.path)
       }))
+    }
+    if (imgHeavy || (mobile && fileEnts.filter(e => isImgFile(e.file) || isVidFile(e.file)).length >= 1)) {
+      const grid = renderThumbGrid(fileEnts.map(e => e.file), mobile ? 48 : 60)
+      yaziMain.appendChild(grid)
+    } else {
+      for (const ent of fileEnts) {
+        yaziMain.appendChild(makeYaziRow(ent, {
+          selected: ent.key === selectedKey,
+          onClick: () => { selectedKey = ent.key; persistNav(); renderDrive() },
+          onDbl: () => {
+            if (ent.file?.hasMedia) downloadFileLive(ent.file)
+          }
+        }))
+      }
     }
   }
 
@@ -1620,9 +2065,10 @@ function renderDrive() {
 
   const dirs = list.filter(e => e.kind === 'dir').length
   const files = list.filter(e => e.kind === 'file').length
-  yaziFoot.innerHTML = `<span>📁 <b>${dirs}</b></span><span>📄 <b>${files}</b></span>` +
-    (selected ? `<span>▸ <b>${escapeHtml(selected.name)}</b></span>` : '') +
-    `<span style="margin-left:auto;opacity:.7">Enter / dblclick · ←↑↓→</span>`
+  const selName = selected ? String(selected.name || '').slice(0, 28) : ''
+  yaziFoot.innerHTML = `<span>📁<b>${dirs}</b> 📄<b>${files}</b></span>` +
+    (selName ? `<span style="opacity:.85;overflow:hidden;text-overflow:ellipsis"> · ${escapeHtml(selName)}</span>` : '')
+  if (typeof fitAppDisk === 'function') requestAnimationFrame(fitAppDisk)
 }
 
 // keyboard like a TUI file manager
@@ -2065,14 +2511,179 @@ async function loadDrive() {
   } catch(e){ msg.className='err'; msg.textContent=String(e.message||e) }
 }
 
+// Called from Android native folder upload
+window.wsNativeProgress = function (cur, total, name) {
+  const box = document.getElementById('nativeProg')
+  if (!box) return
+  box.classList.add('show')
+  document.getElementById('npTitle').textContent = 'Вивантаження з телефону'
+  const pct = total ? Math.min(100, Math.round((cur / total) * 100)) : 0
+  document.getElementById('npFill').style.width = pct + '%'
+  document.getElementById('npMeta').textContent =
+    `${cur} / ${total} · ${pct}%` + (name ? ` · ${name}` : '')
+}
+window.wsNativeDone = async function (ok, fail, folder) {
+  const box = document.getElementById('nativeProg')
+  if (box) {
+    document.getElementById('npFill').style.width = '100%'
+    document.getElementById('npMeta').textContent = `Готово · ок ${ok} · помилок ${fail || 0}`
+    setTimeout(() => box.classList.remove('show'), 2500)
+  }
+  msg.className = 'okmsg'
+  msg.textContent = `Залито з телефону: ${ok}` + (fail ? ` · помилок ${fail}` : '')
+  if (folder) {
+    cwd = String(folder).replace(/^\/+|\/+$/g, '')
+    selectedKey = ''
+    persistNav()
+  }
+  await loadDrive()
+}
+
 refreshStatus().then(loadDrive)
 setInterval(refreshStatus, 5000)
 setInterval(()=>{ if(!uploading) loadDrive() }, 10000)
 </script>
 <script>
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").then(r => console.log("SW registered")).catch(() => {})
+  navigator.serviceWorker.register("/sw.js").then(async reg => {
+    try { await reg.update() } catch (_) {}
+  }).catch(() => {})
 }
+</script>
+<script>
+/* phone app: disk fills WebView */
+(function () {
+  function px(n) { return Math.max(0, Math.round(n || 0)) }
+  function fit () {
+    var disk = document.querySelector('.card-disk')
+    var yazi = document.getElementById('tree')
+    var main = document.getElementById('yaziMain')
+    var foot = document.getElementById('yaziFoot')
+    if (!disk || !yazi || !main) return
+    var app = /WattSapDriveApp/i.test(navigator.userAgent)
+    if (!app && innerWidth > 920) return
+
+    document.documentElement.classList.add('ws-app')
+    document.body.classList.add('ws-app')
+
+    document.querySelectorAll('body > h1, body > .sub, body > .card:not(.card-disk)').forEach(function (el) {
+      el.style.display = 'none'
+    })
+    var empty = document.getElementById('empty')
+    if (empty) empty.style.cssText = 'display:none!important;height:0;margin:0;padding:0;overflow:hidden'
+    disk.querySelectorAll('#btnExport,#btnImport,.toolbar h2').forEach(function (el) {
+      el.style.display = 'none'
+    })
+    var prev = document.getElementById('yaziPrev')
+    var parent = document.getElementById('yaziParent')
+    if (prev) prev.style.cssText = 'display:none!important'
+    if (parent) parent.style.cssText = 'display:none!important'
+    if (foot) foot.style.cssText = 'display:none!important;height:0!important'
+
+    var vv = window.visualViewport
+    var H = Math.max(
+      px(window.__WS_NATIVE_H),
+      px(vv && vv.height),
+      px(window.innerHeight),
+      px(document.documentElement.clientHeight),
+      px(document.body && document.body.clientHeight)
+    )
+    var W = Math.max(
+      px(window.__WS_NATIVE_W),
+      px(vv && vv.width),
+      px(window.innerWidth),
+      px(document.documentElement.clientWidth)
+    )
+    if (H < 200) H = px(window.innerHeight) || 640
+
+    document.documentElement.style.cssText = 'height:' + H + 'px !important;overflow:hidden !important;margin:0 !important;padding:0 !important;background:#0b0e14'
+    document.body.style.cssText = 'height:' + H + 'px !important;overflow:hidden !important;margin:0 !important;padding:0 !important;max-width:none !important;background:#0b0e14'
+
+    disk.style.setProperty('position', 'fixed', 'important')
+    disk.style.setProperty('left', '0px', 'important')
+    disk.style.setProperty('top', '0px', 'important')
+    disk.style.setProperty('width', W + 'px', 'important')
+    disk.style.setProperty('height', H + 'px', 'important')
+    disk.style.setProperty('right', '0px', 'important')
+    disk.style.setProperty('bottom', 'auto', 'important')
+    disk.style.setProperty('margin', '0', 'important')
+    disk.style.setProperty('padding', '0', 'important')
+    disk.style.setProperty('border', '0', 'important')
+    disk.style.setProperty('border-radius', '0', 'important')
+    disk.style.setProperty('z-index', '50', 'important')
+    disk.style.setProperty('overflow', 'hidden', 'important')
+    disk.style.background = '#0b0e14'
+    disk.style.boxSizing = 'border-box'
+    disk.style.display = 'block'
+
+    var toolbar = disk.querySelector('.toolbar')
+    var pathEl = disk.querySelector('.yazi-path')
+    if (toolbar) {
+      toolbar.style.cssText = 'position:absolute;left:0;right:0;top:0;padding:4px 6px;box-sizing:border-box;display:flex;flex-wrap:nowrap;gap:4px;align-items:center;background:#0b0e14;z-index:2'
+    }
+    if (pathEl) {
+      pathEl.style.cssText = 'position:absolute;left:0;right:0;padding:1px 8px 4px;box-sizing:border-box;font-size:.72rem;z-index:2;background:#0b0e14;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
+    }
+    void disk.offsetHeight
+    var topH = 0
+    if (toolbar) { toolbar.style.top = '0px'; topH = toolbar.offsetHeight }
+    if (pathEl) { pathEl.style.top = topH + 'px'; topH += pathEl.offsetHeight }
+
+    var yH = Math.max(200, H - topH)
+    yazi.className = 'yazi'
+    yazi.style.setProperty('position', 'absolute', 'important')
+    yazi.style.setProperty('left', '0', 'important')
+    yazi.style.setProperty('right', '0', 'important')
+    yazi.style.setProperty('top', topH + 'px', 'important')
+    yazi.style.setProperty('bottom', '0', 'important')
+    yazi.style.setProperty('height', yH + 'px', 'important')
+    yazi.style.setProperty('width', '100%', 'important')
+    yazi.style.setProperty('margin', '0', 'important')
+    yazi.style.setProperty('padding', '0', 'important')
+    yazi.style.setProperty('border', '0', 'important')
+    yazi.style.setProperty('border-radius', '0', 'important')
+    yazi.style.setProperty('display', 'block', 'important')
+    yazi.style.setProperty('overflow', 'hidden', 'important')
+    yazi.style.setProperty('min-height', '0', 'important')
+    yazi.style.setProperty('max-height', 'none', 'important')
+    yazi.style.background = '#121820'
+
+    main.style.setProperty('position', 'absolute', 'important')
+    main.style.setProperty('left', '0', 'important')
+    main.style.setProperty('top', '0', 'important')
+    main.style.setProperty('right', '0', 'important')
+    main.style.setProperty('bottom', '0', 'important')
+    main.style.setProperty('width', '100%', 'important')
+    main.style.setProperty('height', '100%', 'important')
+    main.style.setProperty('overflow', 'auto', 'important')
+    main.style.webkitOverflowScrolling = 'touch'
+    main.style.background = '#121820'
+    main.style.padding = '0'
+    main.style.margin = '0'
+    main.style.border = '0'
+
+    var grid = main.querySelector('.thumb-grid')
+    if (grid) {
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:3px;align-content:start;width:100%;box-sizing:border-box'
+      grid.querySelectorAll('.thumb-card:not(.vid) .cap').forEach(function (c) { c.style.display = 'none' })
+      grid.querySelectorAll('.thumb-card.vid .cap').forEach(function (c) {
+        c.style.display = 'block'; c.style.textAlign = 'center'; c.style.fontWeight = '700'; c.style.color = '#7dd3fc'
+      })
+    }
+  }
+
+  window.fitAppDisk = fit
+  window.addEventListener('load', fit)
+  window.addEventListener('resize', fit)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fit)
+    window.visualViewport.addEventListener('scroll', fit)
+  }
+  window.addEventListener('orientationchange', function () { setTimeout(fit, 150) })
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(fit, 30) })
+  ;[50, 200, 600, 1200, 2500].forEach(function (ms) { setTimeout(fit, ms) })
+  setInterval(fit, 4000)
+})()
 </script>
 </body>
 </html>

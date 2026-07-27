@@ -12,3 +12,14 @@ logs/
 WatCurs
 WatDeep
 WatDeepCor
+
+# keep release APKs
+!releases/
+!releases/*.apk
+
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+android/.idea/
+*.iml

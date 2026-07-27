@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="wa_green">#25D366</color>
+    <color name="wa_dark">#0B141A</color>
+    <color name="wa_panel">#111B21</color>
+    <color name="wa_text">#E9EDEF</color>
+    <color name="wa_muted">#8696A0</color>
+</resources>

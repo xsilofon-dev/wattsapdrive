@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WattSapDrive" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/wa_green</item>
+        <item name="colorPrimaryDark">@color/wa_dark</item>
+        <item name="colorAccent">@color/wa_green</item>
+        <item name="android:statusBarColor">@color/wa_dark</item>
+        <item name="android:navigationBarColor">@color/wa_dark</item>
+        <item name="android:windowBackground">@color/wa_dark</item>
+        <item name="android:textColorPrimary">@color/wa_text</item>
+    </style>
+</resources>

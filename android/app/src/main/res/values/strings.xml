@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WattSapDrive</string>
+    <string name="server_hint">Адреса бота (напр. http://127.0.0.1:3000)</string>
+    <string name="open_disk">Відкрити диск</string>
+    <string name="open_pair">Привʼязка</string>
+    <string name="settings">Сервер</string>
+    <string name="reload">Оновити</string>
+    <string name="save">Зберегти</string>
+</resources>

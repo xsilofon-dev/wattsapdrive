@@ -73,6 +73,16 @@ bash install-termux.sh
 cd ~/wattsapdrive && git pull && bash install-termux.sh
 ```
 
+
+## Android APK (телефон)
+
+1. Завантаж **[WattSapDrive-0.3.2.apk](https://github.com/xsilofon-dev/wattsapdrive/releases/latest)** з Releases.
+2. Дозволь установку з невідомих джерел для браузера/файлового менеджера.
+3. Встанови APK → відкрий додаток → вкажи адресу бота (напр. `http://127.0.0.1:3000` через `adb reverse`, або LAN IP ПК).
+4. На ПК має працювати WattSapDrive (`node src/bot.js` / Termux / systemd).
+
+Галерея, завантаження папок і кнопка **↓ Ще** працюють у WebView-обгортці.
+
 ## Встановлення на ПК / Linux
 
 Потрібен **Node.js 18+**.
