@@ -19,45 +19,72 @@
             android:id="@+id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#111B21"
+            android:background="#0E171C"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="4dp">
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
 
             <Button
                 android:id="@+id/btnHome"
-                style="?android:attr/borderlessButtonStyle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
-                android:text="Диск"
-                android:textColor="@color/wa_text" />
-
-            <Button
-                android:id="@+id/btnPairBar"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Pair"
-                android:textColor="@color/wa_text" />
+                android:background="@drawable/bg_nav_btn"
+                android:elevation="0dp"
+                android:stateListAnimator="@null"
+                android:text="@string/nav_drive"
+                android:textAllCaps="false"
+                android:textColor="@color/wa_text"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/btnReload"
-                style="?android:attr/borderlessButtonStyle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
-                android:text="@string/reload"
-                android:textColor="@color/wa_text" />
+                android:background="@drawable/bg_nav_btn"
+                android:elevation="0dp"
+                android:stateListAnimator="@null"
+                android:text="@string/nav_refresh"
+                android:textAllCaps="false"
+                android:textColor="@color/wa_text"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnPairBar"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_nav_btn"
+                android:elevation="0dp"
+                android:stateListAnimator="@null"
+                android:text="@string/nav_pair"
+                android:textAllCaps="false"
+                android:textColor="@color/wa_text"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/btnServer"
-                style="?android:attr/borderlessButtonStyle"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
-                android:text="@string/settings"
-                android:textColor="@color/wa_green" />
+                android:background="@drawable/bg_nav_btn"
+                android:elevation="0dp"
+                android:stateListAnimator="@null"
+                android:text="@string/nav_server"
+                android:textAllCaps="false"
+                android:textColor="@color/wa_green"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 

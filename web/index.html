@@ -153,14 +153,88 @@ a.qrlink{color:var(--wa);text-decoration:none}a.qrlink:hover{text-decoration:und
 .net-tier.slow{color:#f8737f;background:#f8737f18}
 .net-tier.wait{color:var(--muted-2)}
 .net-ip .net-num{font-size:.95rem;font-family:ui-monospace,monospace;font-weight:600;letter-spacing:0;word-break:break-all}
+.home-bar{
+  display:none;align-items:center;gap:10px;margin:-4px 0 12px;padding-bottom:10px;
+  border-bottom:1px solid var(--line)
+}
+.home-bar b{font-size:1.05rem;letter-spacing:.02em}
+body.ws-app.ws-home .home-bar{display:flex}
+body.ws-app.ws-home #netWidget{
+  display:block !important;position:fixed !important;inset:0 !important;z-index:80 !important;
+  margin:0 !important;border:0 !important;border-radius:0 !important;
+  overflow:auto !important;-webkit-overflow-scrolling:touch;
+  background:#0b0e14 !important;padding:12px 14px 28px !important;
+  max-height:none !important
+}
+body.ws-app.ws-home .card-disk{display:none !important;visibility:hidden !important}
+body.ws-app.ws-home .net-av{width:72px;height:72px}
+body.ws-app.ws-home .net-phone{font-size:1.2rem}
+body.ws-app.ws-home .net-top{flex-direction:column;align-items:flex-start;gap:12px}
+body.ws-app.ws-home #btnSpeed{width:100%;min-height:48px;font-size:1rem}
+body.ws-app.ws-home .net-grid{grid-template-columns:1fr;gap:10px;margin-top:16px}
+body.ws-app.ws-home .net-cell{min-height:88px}
+body.ws-app #goHomeBtn.on-home{border-color:#25D366;color:#25D366}
 /* —— Yazi-style 3-pane disk browser —— */
 .card-disk{padding:12px 14px 10px;background:#0b0e14;border-color:#1a2030}
 .card-disk .toolbar{margin-bottom:8px}
 .card-disk .toolbar h2{color:#6b7585;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
-.yazi-path{
-  font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
-  font-size:.82rem;color:#7dd3fc;padding:4px 6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+.path-nav{
+  display:flex;align-items:center;gap:6px;padding:4px 6px 8px;min-height:40px;box-sizing:border-box
 }
+.path-nav-btn{
+  flex:0 0 auto;min-width:40px;min-height:36px;padding:6px 10px;border-radius:8px;
+  border:1px solid #2a3344;background:#151b28;color:#e8edf5;font-size:1rem;line-height:1;
+  cursor:pointer;-webkit-tap-highlight-color:transparent
+}
+.path-nav-btn:active{background:#1e2636}
+.path-nav-btn:disabled{opacity:.35;pointer-events:none}
+.yazi-path{
+  flex:1;min-width:0;display:flex;align-items:center;gap:4px;
+  font-family:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+  font-size:.82rem;color:#7dd3fc;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0
+}
+.yazi-path::-webkit-scrollbar{display:none}
+.crumb{
+  flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  min-height:34px;padding:6px 10px;border-radius:8px;border:1px solid #243044;
+  background:#121826;color:#9ad8f5;text-decoration:none;white-space:nowrap;
+  max-width:42vw;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent
+}
+.crumb:active,.crumb.cur{background:#1a2740;border-color:#3a5a80;color:#e0f4ff}
+.crumb-sep{flex:0 0 auto;opacity:.4;color:#7dd3fc;padding:0 1px;user-select:none}
+.item-menu-btn{
+  flex:0 0 auto;width:40px;height:40px;margin-left:2px;border:0;border-radius:10px;
+  background:transparent;color:#9aa4b2;font-size:1.35rem;line-height:1;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent
+}
+.item-menu-btn:active,.item-menu-btn:hover{background:#1e2636;color:#e8edf5}
+.thumb-card .item-menu-btn{
+  position:absolute;top:4px;right:4px;z-index:3;width:34px;height:34px;
+  background:#000a;color:#fff;border-radius:9px;font-size:1.15rem;border:1px solid #fff2
+}
+.thumb-card .item-menu-btn:active{background:#000c}
+.ctx-sheet{
+  display:none;position:fixed;inset:0;z-index:90;background:#0009;
+  align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box
+}
+.ctx-sheet.show{display:flex}
+.ctx-panel{
+  width:min(420px,100%);background:#121826;border:1px solid #2a3942;border-radius:16px 16px 12px 12px;
+  padding:10px 10px 14px;box-shadow:0 -8px 40px #000a;max-height:70vh;overflow:auto
+}
+.ctx-head{padding:8px 10px 12px;border-bottom:1px solid #1e2636;margin-bottom:6px}
+.ctx-title{font-weight:700;font-size:1rem;color:#e8edf5;word-break:break-word}
+.ctx-sub{color:#6b7585;font-size:.78rem;margin-top:3px}
+.ctx-act{
+  display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:10px 12px;
+  border:0;border-radius:10px;background:transparent;color:#e8edf5;font-size:1rem;
+  text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent
+}
+.ctx-act:active,.ctx-act:hover{background:#1a2330}
+.ctx-act .ico{width:1.4em;text-align:center;opacity:.9}
+.ctx-act.danger{color:#f8737f}
+.ctx-cancel{margin-top:6px;border:1px solid #2a3942;background:#0f141c;justify-content:center;color:#9aa4b2}
 .yazi{
   display:grid;grid-template-columns:minmax(120px,.9fr) minmax(200px,1.35fr) minmax(160px,1.1fr);
   gap:0;min-height:320px;height:70vh;border:1px solid #1e2636;border-radius:8px;overflow:hidden;
@@ -190,6 +264,23 @@ body.ws-app .card-disk {
 .yazi-ico{flex:0 0 auto;width:1.2em;text-align:center;opacity:.95}
 .yazi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .yazi-meta{flex:0 0 auto;color:#6b7585;font-size:.75rem;padding-left:6px}
+/* мобільний додаток: папки великі під палець */
+body.ws-app .yazi-row.t-dir{
+  min-height:68px !important;padding:16px 16px !important;gap:14px !important;
+  margin:5px 8px !important;border-radius:14px !important;
+  border:1px solid #243044 !important;background:#121826 !important;
+  font-size:1.15rem !important;box-sizing:border-box !important;
+  -webkit-tap-highlight-color:transparent
+}
+body.ws-app .yazi-row.t-dir .yazi-ico{font-size:1.75rem !important;width:1.8em !important}
+body.ws-app .yazi-row.t-dir .yazi-name{font-weight:650 !important;font-size:1.15rem !important}
+body.ws-app .yazi-row.t-dir .yazi-meta{font-size:.95rem !important;padding-left:10px !important}
+body.ws-app .yazi-row.t-dir.sel,
+body.ws-app .yazi-row.t-dir.cwd{background:#1a2740 !important;border-color:#3a5a80 !important}
+body.ws-app .yazi-row.t-dir:active{background:#1e3050 !important}
+body.ws-app .yazi-row:not(.t-dir){min-height:50px;padding:12px 14px}
+body.ws-app .path-nav-btn{min-width:48px;min-height:44px;font-size:1.15rem}
+body.ws-app .crumb{min-height:42px;padding:8px 12px;font-size:.95rem;max-width:48vw}
 .yazi-row.t-dir .yazi-name{color:#89b4fa}
 .yazi-row.t-img .yazi-name{color:#5eead4}
 .yazi-row.t-vid .yazi-name{color:#fbbf24}
@@ -220,9 +311,12 @@ body.ws-app .card-disk {
   width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:4px;color:#c8d0da;font-size:1.6rem;background:#243044;box-sizing:border-box
 }
-.thumb-card.vid .ph{
-  background:linear-gradient(160deg,#1e3a5f 0%,#2a4a6e 55%,#1a2f4a 100%);
-  color:#e8eef7;border:0
+.thumb-card.vid .vid-badge{
+  position:absolute;left:6px;bottom:22px;z-index:2;
+  width:28px;height:28px;border-radius:50%;
+  background:#000a;color:#fff;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;border:1px solid #fff4
 }
 .thumb-card .ph .ph-label{
   font-size:.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
@@ -259,9 +353,16 @@ body.ws-app .card-disk {
   align-items:center;justify-content:center;padding:12px;flex-direction:column;gap:10px
 }
 .lightbox.show{display:flex}
-.lightbox img{max-width:100%;max-height:calc(100dvh - 88px);object-fit:contain;border-radius:8px}
+.lightbox img,.lightbox video{
+  max-width:100%;max-height:calc(100dvh - 88px);object-fit:contain;border-radius:8px;
+  background:#000;width:100%
+}
+.lightbox .lb-wait{
+  display:none;color:#9aa4b2;font-size:.9rem;text-align:center;padding:8px
+}
+.lightbox .lb-wait.show{display:block}
 .lightbox .lb-meta{color:#c8d0da;font-size:.85rem;text-align:center}
-.lightbox .lb-close{position:absolute;top:10px;right:12px}
+.lightbox .lb-close{position:absolute;top:10px;right:12px;z-index:2}
 body.ws-app{padding-bottom:0;margin:0;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 html.ws-app{height:100%;height:100dvh;overflow:hidden}
 body.ws-app > h1{flex:0 0 auto;margin:6px 10px 2px;font-size:1.05rem}
@@ -296,7 +397,7 @@ body.ws-app .native-prog{bottom:12px}
     padding:6px 6px 0;
   }
   body.ws-app .card-disk .toolbar{flex-wrap:wrap;gap:6px;flex:0 0 auto}
-  body.ws-app .yazi-path{margin:2px 0;flex:0 0 auto}
+  body.ws-app .path-nav{margin:2px 0;flex:0 0 auto}
   body.ws-app .yazi-foot{flex:0 0 auto;padding:4px 2px 6px}
 
   .yazi{
@@ -315,8 +416,24 @@ body.ws-app .native-prog{bottom:12px}
     border-radius:10px;
   }
   body.ws-app .yazi-foot{flex:0 0 auto}
-  body.ws-app .yazi-path{flex:0 0 auto}
+  body.ws-app .path-nav{flex:0 0 auto}
   body.ws-app .card-disk .toolbar{flex:0 0 auto}
+  /* папки — великі тач-таргети */
+  .yazi-row.t-dir,
+  body.ws-app .yazi-row.t-dir{
+    min-height:56px;padding:12px 14px;gap:12px;margin:3px 6px;
+    border-radius:10px;border:1px solid #1e2636;background:#121826;
+    font-size:1.05rem;-webkit-tap-highlight-color:transparent
+  }
+  .yazi-row.t-dir .yazi-ico,
+  body.ws-app .yazi-row.t-dir .yazi-ico{font-size:1.45rem;width:1.6em}
+  .yazi-row.t-dir .yazi-name,
+  body.ws-app .yazi-row.t-dir .yazi-name{font-weight:600;font-size:1.05rem}
+  .yazi-row.t-dir .yazi-meta,
+  body.ws-app .yazi-row.t-dir .yazi-meta{font-size:.85rem;padding-left:8px}
+  .yazi-row.t-dir:active,
+  body.ws-app .yazi-row.t-dir:active{background:#1a2740}
+  .yazi-row:not(.t-dir){min-height:44px;padding:10px 12px}
   /* превʼю ховаємо — галерея тільки в main на весь блок */
   .yazi-prev{display:none !important}
   .yazi-main{
@@ -338,10 +455,11 @@ body.ws-app .native-prog{bottom:12px}
   }
   .thumb-card img,.thumb-card .ph{width:100%;height:100%;object-fit:cover}
   .card-disk{padding:10px}
-  .yazi-path{font-size:.78rem}
+  .path-nav{padding:6px 0;margin-bottom:4px}
+  .crumb{font-size:.9rem;font-weight:600}
 }
 /* —— share modal —— */
-.share-overlay{position:fixed;inset:0;background:#0008;backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.share-overlay{position:fixed;inset:0;background:#0008;backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
 .share-box{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 20px 60px #000a}
 .share-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .share-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--panel-2);padding:4px;border-radius:10px;border:1px solid var(--line)}
@@ -379,6 +497,10 @@ body.ws-app .native-prog{bottom:12px}
 </div>
 
 <div class="card net-widget" id="netWidget">
+  <div class="home-bar" id="homeBar">
+    <button type="button" class="btn secondary" id="homeBackBtn">← Диск</button>
+    <b>Дім</b>
+  </div>
   <div class="net-top">
     <img id="netAvatar" class="net-av" alt="" hidden>
     <div id="netAvatarPh" class="net-av ph" aria-hidden="true">👤</div>
@@ -476,7 +598,11 @@ body.ws-app .native-prog{bottom:12px}
     <input type="file" id="catalogInput" accept="application/json,.json" style="display:none">
     <a id="dlAnchor" style="display:none"></a>
   </div>
-  <div class="yazi-path" id="yaziPath">/</div>
+  <div class="path-nav" id="pathNav">
+    <button type="button" class="path-nav-btn" id="goHomeBtn" title="Дім — профіль і швидкість" aria-label="Дім">⌂</button>
+    <button type="button" class="path-nav-btn" id="goUpBtn" title="Вгору" aria-label="Вгору">↑</button>
+    <div class="yazi-path" id="yaziPath" aria-label="Шлях"></div>
+  </div>
   <div class="yazi" id="tree">
     <div class="yazi-col" id="yaziParent"></div>
     <div class="yazi-col yazi-main" id="yaziMain"></div>
@@ -494,47 +620,60 @@ body.ws-app .native-prog{bottom:12px}
 
 <div id="lightbox" class="lightbox">
   <button type="button" class="btn secondary lb-close" id="lbClose">✕</button>
+  <div class="lb-wait" id="lbWait">⏳ Готуємо перегляд… (стрімиться з WhatsApp)</div>
   <img id="lbImg" alt="">
+  <video id="lbVid" controls playsinline webkit-playsinline preload="auto" style="display:none"></video>
   <div class="lb-meta" id="lbMeta"></div>
+</div>
+
+<div id="ctxSheet" class="ctx-sheet" aria-hidden="true">
+  <div class="ctx-panel" role="menu">
+    <div class="ctx-head">
+      <div class="ctx-title" id="ctxTitle">Файл</div>
+      <div class="ctx-sub" id="ctxSub"></div>
+    </div>
+    <div id="ctxActs"></div>
+    <button type="button" class="ctx-act ctx-cancel" id="ctxCancel">Скасувати</button>
+  </div>
 </div>
 
 <div id="shareModal" class="share-overlay" style="display:none">
   <div class="share-box">
     <div class="share-head">
-      <b>↗ Поділитись файлом</b>
+      <b id="shareModalTitle">↗ Поділитись</b>
       <button type="button" class="iconbtn" id="shareClose">✕</button>
     </div>
     <p class="hint" id="shareFile" style="margin:0 0 12px"></p>
 
     <div class="share-tabs">
-      <button type="button" class="share-tab active" data-tab="wa">У WhatsApp другу</button>
-      <button type="button" class="share-tab" data-tab="link">Посилання (LAN)</button>
+      <button type="button" class="share-tab active" data-tab="wa">Поділитись</button>
+      <button type="button" class="share-tab" data-tab="link">Надати доступ</button>
     </div>
 
     <div class="share-pane" id="paneWa">
+      <p class="hint" style="margin:0 0 8px">Надіслати файл другу в WhatsApp (приватний чат). Доступу до диска не буде.</p>
       <label class="hint">Номер друга (з кодом країни)</label>
       <input class="search" id="sharedPhone" inputmode="numeric" placeholder="380XXXXXXXXX">
       <label class="hint" style="margin-top:8px">Підпис (необовʼязково)</label>
       <input class="search" id="shareNote" placeholder="Тримай файл 🙂">
       <div class="actions" style="justify-content:flex-start;margin-top:12px">
-        <button type="button" class="btn" id="shareSendWa">Надіслати</button>
+        <button type="button" class="btn" id="shareSendWa">Надіслати у WhatsApp</button>
       </div>
-      <p class="hint" style="margin-top:8px">Друг отримає <b>тільки цей файл</b> у свій чат. Доступу до диска не буде.</p>
     </div>
 
     <div class="share-pane" id="paneLink" style="display:none">
-      <label class="hint">Час життя посилання</label>
+      <p class="hint" style="margin:0 0 8px">Тимчасове посилання для завантаження. Працює для того, хто дістає цей сервер (мережа/VPN).</p>
+      <label class="hint">Час життя доступу</label>
       <select class="search" id="shareTtl">
         <option value="60">1 година</option>
         <option value="360">6 годин</option>
         <option value="1440">24 години</option>
       </select>
       <div class="actions" style="justify-content:flex-start;margin-top:12px">
-        <button type="button" class="btn" id="shareMakeLink">Створити посилання</button>
+        <button type="button" class="btn" id="shareMakeLink">Створити доступ</button>
         <button type="button" class="btn secondary" id="shareCopyLink" hidden>Копіювати</button>
       </div>
       <input class="search" id="shareLinkOut" readonly hidden style="margin-top:10px">
-      <p class="hint" style="margin-top:8px">Працює для того, хто дістає цей сервер (та сама мережа/VPN). Через інтернет — лише якщо порт відкритий.</p>
     </div>
 
     <p id="shareMsg" class="hint" style="margin-top:10px"></p>
@@ -680,32 +819,79 @@ document.getElementById('btnMkdir').onclick = e => { e.stopPropagation(); create
 document.getElementById('btnMkdir2').onclick = () => createFolder()
 document.getElementById('btnRefresh').onclick = () => loadDrive()
 
-// —— share file modal ——
-let shareFileObj = null
+// —— share file / folder modal ——
+let shareTarget = null // { kind:'file', file } | { kind:'folder', path, name, count }
 const shareModal = document.getElementById('shareModal')
-function openShare(f) {
-  shareFileObj = f
+
+document.getElementById('ctxCancel')?.addEventListener('click', closeItemMenu)
+document.getElementById('ctxSheet')?.addEventListener('click', e => {
+  if (e.target.id === 'ctxSheet') closeItemMenu()
+})
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeItemMenu()
+})
+
+function openShare(f, tab) {
+  shareTarget = { kind: 'file', file: f }
   document.getElementById('shareFile').textContent = (f.name || '').split('/').pop() + ' · ' + fmtSize(f.size || 0)
   document.getElementById('shareMsg').textContent = ''
   document.getElementById('sharedPhone').value = localStorage.getItem('ws_friend') || ''
   document.getElementById('shareNote').value = ''
   const out = document.getElementById('shareLinkOut'); out.hidden = true; out.value = ''
   document.getElementById('shareCopyLink').hidden = true
-  switchShareTab('wa')
+  const which = tab === 'link' ? 'link' : 'wa'
+  const title = document.getElementById('shareModalTitle')
+  if (title) title.textContent = which === 'link' ? '🔗 Надати доступ' : '↗ Поділитись'
+  const waHint = document.querySelector('#paneWa > p.hint')
+  const linkHint = document.querySelector('#paneLink > p.hint')
+  if (waHint) waHint.textContent = 'Надіслати файл другу в WhatsApp (приватний чат). Доступу до диска не буде.'
+  if (linkHint) linkHint.textContent = 'Тимчасове посилання для завантаження. Працює для того, хто дістає цей сервер (мережа/VPN).'
+  switchShareTab(which)
   shareModal.style.display = 'flex'
 }
-function closeShare() { shareModal.style.display = 'none'; shareFileObj = null }
+
+function openShareFolder(path, tab, count) {
+  const name = String(path || '').split('/').pop() || path
+  shareTarget = { kind: 'folder', path, name, count: count || 0 }
+  document.getElementById('shareFile').textContent = '📁 /' + path + (count ? ' · ' + count + ' файлів' : '')
+  document.getElementById('shareMsg').textContent = ''
+  document.getElementById('sharedPhone').value = localStorage.getItem('ws_friend') || ''
+  document.getElementById('shareNote').value = ''
+  const out = document.getElementById('shareLinkOut'); out.hidden = true; out.value = ''
+  document.getElementById('shareCopyLink').hidden = true
+  const which = tab === 'link' ? 'link' : 'wa'
+  const title = document.getElementById('shareModalTitle')
+  if (title) title.textContent = which === 'link' ? '🔗 Доступ до папки' : '↗ Поділитись папкою'
+  const waHint = document.querySelector('#paneWa > p.hint')
+  const linkHint = document.querySelector('#paneLink > p.hint')
+  if (waHint) waHint.textContent = 'Надіслати файли з папки другу в WhatsApp (до 40 файлів за раз).'
+  if (linkHint) linkHint.textContent = 'Посилання відкриє список усіх файлів папки — кожен можна завантажити.'
+  switchShareTab(which)
+  shareModal.style.display = 'flex'
+}
+
+function closeShare() { shareModal.style.display = 'none'; shareTarget = null }
 function switchShareTab(tab) {
   document.querySelectorAll('.share-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab))
   document.getElementById('paneWa').style.display = tab === 'wa' ? '' : 'none'
   document.getElementById('paneLink').style.display = tab === 'link' ? '' : 'none'
+  if (shareTarget) {
+    const title = document.getElementById('shareModalTitle')
+    if (title) {
+      if (shareTarget.kind === 'folder') {
+        title.textContent = tab === 'link' ? '🔗 Доступ до папки' : '↗ Поділитись папкою'
+      } else {
+        title.textContent = tab === 'link' ? '🔗 Надати доступ' : '↗ Поділитись'
+      }
+    }
+  }
 }
 document.getElementById('shareClose').onclick = closeShare
 shareModal.addEventListener('click', e => { if (e.target === shareModal) closeShare() })
 document.querySelectorAll('.share-tab').forEach(t => t.onclick = () => switchShareTab(t.dataset.tab))
 
 document.getElementById('shareSendWa').onclick = async () => {
-  if (!shareFileObj) return
+  if (!shareTarget) return
   const phone = (document.getElementById('sharedPhone').value || '').replace(/\D/g, '')
   const note = document.getElementById('shareNote').value || ''
   const sm = document.getElementById('shareMsg')
@@ -713,38 +899,53 @@ document.getElementById('shareSendWa').onclick = async () => {
   localStorage.setItem('ws_friend', phone)
   const btn = document.getElementById('shareSendWa')
   btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Надсилаю…'
-  sm.className = 'hint'; sm.textContent = 'Відправляю файл у WhatsApp…'
+  sm.className = 'hint'
+  sm.textContent = shareTarget.kind === 'folder' ? 'Надсилаю файли папки у WhatsApp…' : 'Відправляю файл у WhatsApp…'
   try {
+    const body = shareTarget.kind === 'folder'
+      ? { folder: shareTarget.path, phone, note }
+      : { id: shareTarget.file.id, phone, note }
     const r = await api('/api/share', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: shareFileObj.id, phone, note })
+      body: JSON.stringify(body)
     })
     const j = await r.json().catch(() => ({}))
     if (!r.ok) throw new Error(j.error || r.status)
     sm.className = 'okmsg'
-    sm.textContent = j.mode === 'wa-parts'
-      ? `Надіслано ${j.parts} частин другові ✓`
-      : 'Надіслано другові ✓'
+    if (j.mode === 'wa-folder') {
+      sm.textContent = 'Надіслано ' + j.sent + ' з ' + j.total +
+        (j.truncated ? ' (ліміт ' + j.limit + ')' : '') +
+        (j.failed ? ' · помилок ' + j.failed : '') + ' ✓'
+    } else if (j.mode === 'wa-parts') {
+      sm.textContent = 'Надіслано ' + j.parts + ' частин другові ✓'
+    } else {
+      sm.textContent = 'Надіслано другові ✓'
+    }
   } catch (e) { sm.className = 'err'; sm.textContent = String(e.message || e) }
   finally { btn.disabled = false; btn.textContent = prev }
 }
 
 document.getElementById('shareMakeLink').onclick = async () => {
-  if (!shareFileObj) return
+  if (!shareTarget) return
   const ttlMin = parseInt(document.getElementById('shareTtl').value, 10) || 60
   const sm = document.getElementById('shareMsg')
-  sm.className = 'hint'; sm.textContent = 'Створюю посилання…'
+  sm.className = 'hint'; sm.textContent = 'Створюю доступ…'
   try {
+    const body = shareTarget.kind === 'folder'
+      ? { folder: shareTarget.path, ttlMin }
+      : { id: shareTarget.file.id, ttlMin }
     const r = await api('/api/share/link', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: shareFileObj.id, ttlMin })
+      body: JSON.stringify(body)
     })
     const j = await r.json().catch(() => ({}))
     if (!r.ok) throw new Error(j.error || r.status)
     const out = document.getElementById('shareLinkOut')
     out.value = j.url; out.hidden = false
     document.getElementById('shareCopyLink').hidden = false
-    sm.className = 'okmsg'; sm.textContent = 'Діє до ' + fmtDate(j.expiresAt)
+    sm.className = 'okmsg'
+    sm.textContent = (j.type === 'folder' ? ('Папка · ' + (j.count || 0) + ' файлів · ') : '') +
+      'діє до ' + fmtDate(j.expiresAt)
   } catch (e) { sm.className = 'err'; sm.textContent = String(e.message || e) }
 }
 document.getElementById('shareCopyLink').onclick = async () => {
@@ -1638,6 +1839,85 @@ function entryIcon(ent) {
   if (ent.kind === 'dir') return '📁'
   return fileIcon(ent.name)
 }
+
+function closeItemMenu() {
+  const sheet = document.getElementById('ctxSheet')
+  if (!sheet) return
+  sheet.classList.remove('show')
+  sheet.setAttribute('aria-hidden', 'true')
+}
+
+function openItemMenu(ent) {
+  const sheet = document.getElementById('ctxSheet')
+  const acts = document.getElementById('ctxActs')
+  const title = document.getElementById('ctxTitle')
+  const sub = document.getElementById('ctxSub')
+  if (!sheet || !acts || !ent) return
+  acts.innerHTML = ''
+  const add = (label, ico, fn, danger) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'ctx-act' + (danger ? ' danger' : '')
+    b.innerHTML = `<span class="ico">${ico}</span><span>${escapeHtml(label)}</span>`
+    b.onclick = () => { closeItemMenu(); fn && fn() }
+    acts.appendChild(b)
+  }
+
+  if (ent.kind === 'dir') {
+    title.textContent = ent.name || baseName(ent.path) || '/'
+    const count = ent.meta
+      ? (ent.meta.fileCount || 0)
+      : (ent.node ? Object.keys(ent.node.dirs || {}).length + (ent.node.files || []).length : 0)
+    sub.textContent = `папка · ${count} елем.`
+    add('Відкрити', '📂', () => {
+      cwd = ent.path || ''
+      selectedKey = ''
+      persistNav()
+      renderDrive()
+    })
+    if (ent.path) {
+      add('Поділитись', '↗', () => openShareFolder(ent.path, 'wa', count))
+      add('Надати доступ', '🔗', () => openShareFolder(ent.path, 'link', count))
+      add('Перемістити / перейменувати', '⇄', () => moveFolder(ent.path))
+      add('Видалити', '🗑', () => deleteFolder(ent.path), true)
+    }
+  } else {
+    const f = ent.file || ent
+    title.textContent = f.name || 'Файл'
+    sub.textContent = `${fmtSize(f.size || 0)}${f.mime ? ' · ' + f.mime : ''}`
+    if (f.hasMedia && isImgFile(f)) {
+      add('Відкрити', '🖼', () => openLightbox(f))
+    } else if (f.hasMedia && isVidFile(f)) {
+      add('Відтворити', '▶', () => openVideoLightbox(f))
+    }
+    if (f.hasMedia) {
+      add('Завантажити', '↓', () => downloadFileLive(f))
+    }
+    if (f.id) {
+      add('Поділитись', '↗', () => openShare(f, 'wa'))
+      add('Надати доступ', '🔗', () => openShare(f, 'link'))
+    }
+    add('Перемістити / перейменувати', '✎', () => renameFile(f.id, f.path || f.name))
+    add('Видалити', '🗑', () => deleteFile(f.id, f.path || f.name), true)
+  }
+  sheet.classList.add('show')
+  sheet.setAttribute('aria-hidden', 'false')
+}
+
+function makeMenuBtn(ent) {
+  const m = document.createElement('button')
+  m.type = 'button'
+  m.className = 'item-menu-btn'
+  m.setAttribute('aria-label', 'Меню')
+  m.textContent = '⋮'
+  m.onclick = e => {
+    e.preventDefault()
+    e.stopPropagation()
+    openItemMenu(ent)
+  }
+  return m
+}
+
 function makeYaziRow(ent, { selected, isCwd, onClick, onDbl }) {
   const row = document.createElement('div')
   const cls = ['yazi-row']
@@ -1651,7 +1931,12 @@ function makeYaziRow(ent, { selected, isCwd, onClick, onDbl }) {
     ? `${(ent.meta.fileCount || Object.keys(ent.node.dirs).length + ent.node.files.length) || 0}`
     : fmtSize(ent.file.size)
   row.innerHTML = `<span class="yazi-ico">${entryIcon(ent)}</span><span class="yazi-name">${escapeHtml(ent.name)}</span><span class="yazi-meta">${escapeHtml(meta)}</span>`
-  row.onclick = e => { e.stopPropagation(); onClick && onClick(ent) }
+  row.appendChild(makeMenuBtn(ent))
+  row.onclick = e => {
+    if (e.target.closest && e.target.closest('.item-menu-btn')) return
+    e.stopPropagation()
+    onClick && onClick(ent)
+  }
   row.ondblclick = e => { e.stopPropagation(); onDbl && onDbl(ent) }
   return row
 }
@@ -1737,7 +2022,7 @@ function renderThumbGrid(files, pageSize = 60) {
     btn.className = 'thumb-card' + (selectedKey === ('f:' + f.id) ? ' sel' : '')
     btn.title = f.name
     if (isVidFile(f)) btn.classList.add('vid')
-    if (isImgFile(f)) {
+    if (isImgFile(f) || isVidFile(f)) {
       const img = document.createElement('img')
       img.loading = 'lazy'
       img.alt = f.name
@@ -1745,25 +2030,34 @@ function renderThumbGrid(files, pageSize = 60) {
       img.onerror = () => {
         const ph = document.createElement('div')
         ph.className = 'ph'
-        ph.innerHTML = '<span>🖼</span><span class="ph-label">фото</span>'
+        if (isVidFile(f)) ph.innerHTML = '<span>▶</span><span class="ph-label">відео</span>'
+        else ph.innerHTML = '<span>🖼</span><span class="ph-label">фото</span>'
         img.replaceWith(ph)
       }
       btn.appendChild(img)
+      if (isVidFile(f)) {
+        const badge = document.createElement('div')
+        badge.className = 'vid-badge'
+        badge.textContent = '▶'
+        btn.appendChild(badge)
+      }
     } else {
       const ph = document.createElement('div')
       ph.className = 'ph'
-      if (isVidFile(f)) ph.innerHTML = '<span>▶</span><span class="ph-label">відео</span>'
-      else ph.textContent = fileIcon(f.name)
+      ph.textContent = fileIcon(f.name)
       btn.appendChild(ph)
     }
     const cap = document.createElement('div')
     cap.className = 'cap'
-    cap.textContent = isVidFile(f) ? 'відео' : f.name
+    cap.textContent = f.name
     btn.appendChild(cap)
-    btn.onclick = () => {
+    btn.appendChild(makeMenuBtn({ kind: 'file', file: f, name: f.name, key: 'f:' + f.id }))
+    btn.onclick = (e) => {
+      if (e.target.closest && e.target.closest('.item-menu-btn')) return
       selectedKey = 'f:' + f.id
       persistNav()
       if (isImgFile(f) && f.hasMedia) openLightbox(f)
+      else if (isVidFile(f) && f.hasMedia) openVideoLightbox(f)
       else renderDrive()
     }
     wrap.appendChild(btn)
@@ -1784,11 +2078,20 @@ function renderThumbGrid(files, pageSize = 60) {
 function openLightbox(f) {
   const box = document.getElementById('lightbox')
   const img = document.getElementById('lbImg')
+  const vid = document.getElementById('lbVid')
+  const wait = document.getElementById('lbWait')
   const meta = document.getElementById('lbMeta')
   if (!box || !img) return
+  if (vid) {
+    vid.pause()
+    vid.removeAttribute('src')
+    vid.load()
+    vid.style.display = 'none'
+  }
+  if (wait) wait.classList.remove('show')
+  img.style.display = 'block'
   meta.textContent = `${f.name} · ${fmtSize(f.size || 0)}`
   img.src = thumbUrl(f.id)
-  // try full download preview for clearer look (still cached by browser)
   const full = `/api/download/${encodeURIComponent(f.id)}?token=${encodeURIComponent(API_TOKEN || '')}`
   const probe = new Image()
   probe.onload = () => { img.src = full }
@@ -1796,8 +2099,53 @@ function openLightbox(f) {
   probe.src = full
   box.classList.add('show')
 }
+function openVideoLightbox(f) {
+  const box = document.getElementById('lightbox')
+  const img = document.getElementById('lbImg')
+  const vid = document.getElementById('lbVid')
+  const wait = document.getElementById('lbWait')
+  const meta = document.getElementById('lbMeta')
+  if (!box || !vid) return
+  img.style.display = 'none'
+  img.removeAttribute('src')
+  vid.style.display = 'block'
+  if (wait) {
+    wait.textContent = '⏳ Стрім з WhatsApp… зараз почне грати'
+    wait.classList.add('show')
+  }
+  meta.textContent = `▶ ${f.name} · ${fmtSize(f.size || 0)}`
+  const ext = String(f.name || '').split('.').pop() || 'mp4'
+  const url = `/api/download/${encodeURIComponent(f.id)}?token=${encodeURIComponent(API_TOKEN || '')}` +
+    `&play=1&ext=${encodeURIComponent(ext.toLowerCase())}`
+  const hideWait = () => { if (wait) wait.classList.remove('show') }
+  vid.onplaying = hideWait
+  vid.onloadeddata = hideWait
+  vid.oncanplay = hideWait
+  vid.onerror = () => {
+    if (wait) {
+      wait.textContent = 'Не вдалося відтворити. Спробуй ще раз.'
+      wait.classList.add('show')
+    }
+  }
+  vid.src = url
+  box.classList.add('show')
+  const p = vid.play()
+  if (p && p.catch) p.catch(() => {})
+}
 function closeLightbox() {
-  document.getElementById('lightbox')?.classList.remove('show')
+  const box = document.getElementById('lightbox')
+  const vid = document.getElementById('lbVid')
+  const wait = document.getElementById('lbWait')
+  if (vid) {
+    try { vid.pause() } catch (_) {}
+    vid.removeAttribute('src')
+    vid.load()
+    vid.style.display = 'none'
+  }
+  if (wait) wait.classList.remove('show')
+  const img = document.getElementById('lbImg')
+  if (img) { img.style.display = 'block' }
+  box?.classList.remove('show')
 }
 document.getElementById('lbClose')?.addEventListener('click', closeLightbox)
 document.getElementById('lightbox')?.addEventListener('click', e => {
@@ -1902,8 +2250,12 @@ function renderPreview(ent, tree) {
     acts.appendChild(a)
     const sh = document.createElement('button')
     sh.type = 'button'; sh.className = 'btn secondary'; sh.textContent = '↗ Поділитись'
-    sh.onclick = () => openShare(f)
+    sh.onclick = () => openShare(f, 'wa')
     acts.appendChild(sh)
+    const acc = document.createElement('button')
+    acc.type = 'button'; acc.className = 'btn secondary'; acc.textContent = '🔗 Доступ'
+    acc.onclick = () => openShare(f, 'link')
+    acts.appendChild(acc)
   }
   const ren = document.createElement('button')
   ren.type = 'button'; ren.className = 'btn secondary'; ren.textContent = '✎ Rename'
@@ -1952,26 +2304,65 @@ function renderDrive() {
   const selected = list.find(e => e.key === selectedKey) || null
   persistNav()
 
-  // clickable breadcrumb
+  function goUp() {
+    if (!cwd) return
+    const par = parentPath(cwd)
+    cwd = par
+    selectedKey = cwd ? 'd:' + cwd : ''
+    persistNav()
+    renderDrive()
+  }
+  function goRoot() {
+    if (!cwd) return
+    cwd = ''
+    selectedKey = ''
+    persistNav()
+    renderDrive()
+  }
+  function goHome() {
+    if (document.body.classList.contains('ws-app')) {
+      openHomeScreen()
+      return
+    }
+    goRoot()
+  }
+  window.goUp = goUp
+  window.goHome = goHome
+  window.goRoot = goRoot
+  const goUpBtn = document.getElementById('goUpBtn')
+  const goHomeBtn = document.getElementById('goHomeBtn')
+  if (goUpBtn) {
+    goUpBtn.onclick = goUp
+    goUpBtn.disabled = !cwd
+  }
+  if (goHomeBtn) {
+    goHomeBtn.onclick = goHome
+    // у додатку ⌂ завжди відкриває «Дім»; на десктопі — корінь
+    goHomeBtn.disabled = document.body.classList.contains('ws-app') ? false : !cwd
+    goHomeBtn.classList.toggle('on-home', document.body.classList.contains('ws-home'))
+  }
+
+  // clickable breadcrumb chips
   yaziPath.innerHTML = ''
   const parts = [''].concat((cwd || '').split('/').filter(Boolean))
   let acc = ''
   parts.forEach((part, i) => {
     if (i > 0) {
       const sep = document.createElement('span')
+      sep.className = 'crumb-sep'
       sep.textContent = '/'
-      sep.style.opacity = '.5'
       yaziPath.appendChild(sep)
       acc = acc ? acc + '/' + part : part
     }
     const a = document.createElement('a')
     a.href = '#'
+    a.className = 'crumb' + (i === parts.length - 1 ? ' cur' : '')
     a.textContent = i === 0 ? '~' : part
-    a.style.color = '#7dd3fc'
-    a.style.textDecoration = 'none'
+    a.title = i === 0 ? '/' : '/' + acc
     const jump = acc
     a.onclick = e => {
       e.preventDefault()
+      if (jump === cwd) return
       cwd = jump
       selectedKey = ''
       persistNav()
@@ -1979,14 +2370,11 @@ function renderDrive() {
     }
     yaziPath.appendChild(a)
   })
-  if (!cwd) {
-    // already have ~
-  } else {
-    const tip = document.createElement('span')
-    tip.style.cssText = 'margin-left:10px;color:#6b7585;font-size:.75rem'
-    tip.textContent = '· клік по шляху = вгору'
-    yaziPath.appendChild(tip)
-  }
+  // keep current folder chip visible
+  requestAnimationFrame(() => {
+    const cur = yaziPath.querySelector('.crumb.cur')
+    if (cur) try { cur.scrollIntoView({ inline: 'end', block: 'nearest' }) } catch (_) {}
+  })
 
   yaziParent.innerHTML = ''
   yaziMain.innerHTML = ''
@@ -2196,6 +2584,34 @@ document.getElementById('btnGroupCreate')?.addEventListener('click', async () =>
     if (groupMsg) groupMsg.textContent = String(e.message || e)
   }
 })
+
+function openHomeScreen() {
+  document.body.classList.add('ws-home')
+  const nw = document.getElementById('netWidget')
+  if (nw) {
+    nw.style.display = ''
+    nw.removeAttribute('hidden')
+  }
+  const btn = document.getElementById('goHomeBtn')
+  if (btn) btn.classList.add('on-home')
+  refreshStatus().catch(() => {})
+}
+
+function closeHomeScreen() {
+  document.body.classList.remove('ws-home')
+  const nw = document.getElementById('netWidget')
+  if (nw && document.body.classList.contains('ws-app')) {
+    nw.style.display = 'none'
+  }
+  const btn = document.getElementById('goHomeBtn')
+  if (btn) btn.classList.remove('on-home')
+  if (typeof fitAppDisk === 'function') requestAnimationFrame(fitAppDisk)
+}
+
+window.openHomeScreen = openHomeScreen
+window.closeHomeScreen = closeHomeScreen
+
+document.getElementById('homeBackBtn')?.addEventListener('click', () => closeHomeScreen())
 
 function fillNetWidget(s) {
   const me = s.me || {}
@@ -2567,8 +2983,13 @@ if ("serviceWorker" in navigator) {
     document.body.classList.add('ws-app')
 
     document.querySelectorAll('body > h1, body > .sub, body > .card:not(.card-disk)').forEach(function (el) {
+      if (el.id === 'netWidget') return
       el.style.display = 'none'
     })
+    var netW = document.getElementById('netWidget')
+    if (netW && !document.body.classList.contains('ws-home')) {
+      netW.style.display = 'none'
+    }
     var empty = document.getElementById('empty')
     if (empty) empty.style.cssText = 'display:none!important;height:0;margin:0;padding:0;overflow:hidden'
     disk.querySelectorAll('#btnExport,#btnImport,.toolbar h2').forEach(function (el) {
@@ -2617,17 +3038,17 @@ if ("serviceWorker" in navigator) {
     disk.style.display = 'block'
 
     var toolbar = disk.querySelector('.toolbar')
-    var pathEl = disk.querySelector('.yazi-path')
+    var pathNav = document.getElementById('pathNav')
     if (toolbar) {
       toolbar.style.cssText = 'position:absolute;left:0;right:0;top:0;padding:4px 6px;box-sizing:border-box;display:flex;flex-wrap:nowrap;gap:4px;align-items:center;background:#0b0e14;z-index:2'
     }
-    if (pathEl) {
-      pathEl.style.cssText = 'position:absolute;left:0;right:0;padding:1px 8px 4px;box-sizing:border-box;font-size:.72rem;z-index:2;background:#0b0e14;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
+    if (pathNav) {
+      pathNav.style.cssText = 'position:absolute;left:0;right:0;padding:4px 6px;box-sizing:border-box;display:flex;align-items:center;gap:6px;background:#0b0e14;z-index:2;min-height:44px'
     }
     void disk.offsetHeight
     var topH = 0
     if (toolbar) { toolbar.style.top = '0px'; topH = toolbar.offsetHeight }
-    if (pathEl) { pathEl.style.top = topH + 'px'; topH += pathEl.offsetHeight }
+    if (pathNav) { pathNav.style.top = topH + 'px'; topH += pathNav.offsetHeight }
 
     var yH = Math.max(200, H - topH)
     yazi.className = 'yazi'

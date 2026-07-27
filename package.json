@@ -1,6 +1,6 @@
 {
   "name": "wattsapdrive",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "WhatsApp as free cloud storage \u2014 web disk, chunked uploads, live speeds",
   "main": "src/bot.js",
   "scripts": {

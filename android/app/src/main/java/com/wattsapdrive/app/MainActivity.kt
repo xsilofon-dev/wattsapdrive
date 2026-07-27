@@ -19,17 +19,25 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import android.graphics.Color
+import android.widget.ScrollView
+import android.widget.TextView
+import java.net.URL
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.documentfile.provider.DocumentFile
+import androidx.core.content.FileProvider
 import com.wattsapdrive.app.databinding.ActivityMainBinding
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okio.BufferedSink
+import okio.buffer
+import okio.sink
 import okio.source
+import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -143,6 +151,39 @@ class MainActivity : AppCompatActivity() {
                 binding.webView.visibility = View.VISIBLE
             }
 
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString() ?: return false
+                val low = url.lowercase()
+                // keep in-app navigation for our server UI
+                val base = serverBase()
+                if (url.startsWith(base) && !low.contains("/api/download/")) return false
+                // media downloads / external -> system handlers
+                val mime = when {
+                    low.contains("/api/download/") && (low.contains("ext=mp4") || low.contains("ext=mkv") ||
+                        low.contains("ext=webm") || low.contains("ext=mov") || low.contains("ext=3gp") ||
+                        low.contains("ext=avi")) -> "video/*"
+                    low.matches(Regex(".*\\.(mp4|mkv|avi|mov|webm|3gp)(\\?.*)?$")) -> "video/*"
+                    low.matches(Regex(".*\\.(jpg|jpeg|png|gif|webp|bmp)(\\?.*)?$")) -> "image/*"
+                    else -> null
+                }
+                if (mime != null) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.parse(url), mime)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "Немає програми: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                    return true
+                }
+                if (url.startsWith(base)) return false
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (_: Exception) {}
+                return true
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 // drop stale service worker / caches that keep old UI
                 val cssH = ((view?.height ?: 0) / resources.displayMetrics.density).toInt()
@@ -253,6 +294,114 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun pickFolderForUpload() {
             runOnUiThread { pickFolderTree() }
+        }
+
+        @JavascriptInterface
+        fun openMedia(url: String, mime: String) {
+            // Не відкриваємо URL напряму в плеєрі: файл спочатку качається з WhatsApp
+            // на сервері, і плеєр падає на буферизації. Спочатку локальний кеш → потім плеєр.
+            runOnUiThread {
+                Toast.makeText(this@MainActivity, "Завантаження відео… зачекай", Toast.LENGTH_SHORT).show()
+                binding.webView.evaluateJavascript(
+                    """
+                    (function(){
+                      var el=document.getElementById('nativeProg');
+                      if(!el) return;
+                      el.classList.add('show');
+                      var t=document.getElementById('npTitle'); if(t) t.textContent='Завантаження для перегляду…';
+                      var m=document.getElementById('npMeta'); if(m) m.textContent='з WhatsApp на телефон';
+                      var f=document.getElementById('npFill'); if(f) f.style.width='15%';
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
+            thread {
+                var dlgDismissed = false
+                fun hideProg() {
+                    if (dlgDismissed) return
+                    dlgDismissed = true
+                    runOnUiThread {
+                        binding.webView.evaluateJavascript(
+                            "(function(){var el=document.getElementById('nativeProg'); if(el) el.classList.remove('show');})();",
+                            null
+                        )
+                    }
+                }
+                try {
+                    val req = Request.Builder().url(url).get().build()
+                    http.newCall(req).execute().use { resp ->
+                        if (!resp.isSuccessful) throw IllegalStateException("HTTP ${resp.code}")
+                        val body = resp.body ?: throw IllegalStateException("порожня відповідь")
+                        val total = body.contentLength()
+                        val ext = when {
+                            mime.startsWith("video/") -> {
+                                val q = Uri.parse(url).getQueryParameter("ext")
+                                if (!q.isNullOrBlank()) q else "mp4"
+                            }
+                            mime.startsWith("image/") -> "jpg"
+                            else -> "bin"
+                        }
+                        val id = Uri.parse(url).lastPathSegment?.substringBefore('?') ?: "media"
+                        val dir = File(cacheDir, "media").apply { mkdirs() }
+                        val out = File(dir, "$id.$ext")
+                        var read = 0L
+                        body.source().use { source ->
+                            out.sink().buffer().use { sink ->
+                                val buf = ByteArray(64 * 1024)
+                                while (true) {
+                                    val n = source.read(buf)
+                                    if (n <= 0) break
+                                    sink.write(buf, 0, n)
+                                    read += n
+                                    if (total > 0 && read % (512 * 1024) < 64 * 1024) {
+                                        val pct = ((read * 100) / total).toInt().coerceIn(1, 99)
+                                        runOnUiThread {
+                                            binding.webView.evaluateJavascript(
+                                                "(function(){var f=document.getElementById('npFill'); if(f) f.style.width='$pct%'; var m=document.getElementById('npMeta'); if(m) m.textContent='$pct%';})();",
+                                                null
+                                            )
+                                        }
+                                    }
+                                }
+                                sink.flush()
+                            }
+                        }
+                        val uri = FileProvider.getUriForFile(
+                            this@MainActivity,
+                            "${packageName}.fileprovider",
+                            out
+                        )
+                        hideProg()
+                        runOnUiThread {
+                            try {
+                                startActivity(
+                                    Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, mime.ifBlank { "video/*" })
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Немає плеєра: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    hideProg()
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Помилка завантаження: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
         }
     }
 

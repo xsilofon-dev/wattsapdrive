@@ -1310,6 +1310,25 @@ const THUMB_DIR = path.join(TMP, 'thumbs')
 fs.mkdirSync(THUMB_DIR, { recursive: true })
 let sharp = null
 try { sharp = require('sharp') } catch { sharp = null }
+const { execFile } = require('child_process')
+const { promisify } = require('util')
+const execFileAsync = promisify(execFile)
+
+function resolveFfmpeg() {
+  const candidates = [
+    process.env.FFMPEG,
+    path.join(ROOT, 'bin', 'ffmpeg'),
+    '/run/current-system/sw/bin/ffmpeg',
+    'ffmpeg'
+  ].filter(Boolean)
+  for (const c of candidates) {
+    try {
+      if (c === 'ffmpeg') return c
+      if (fs.existsSync(c)) return c
+    } catch {}
+  }
+  return null
+}
 
 function isImageEntry(entry) {
   const mime = String(entry?.mime || '').toLowerCase()
@@ -1323,6 +1342,45 @@ function isVideoEntry(entry) {
   const name = String(entry?.name || '').toLowerCase()
   if (mime.startsWith('video/')) return true
   return /\.(mp4|mov|webm|mkv|3gp)$/i.test(name)
+}
+
+/** Extract one frame from video via ffmpeg → JPEG buffer */
+async function videoFrameThumb(entry) {
+  const ffmpeg = resolveFfmpeg()
+  if (!ffmpeg) throw new Error('ffmpeg not found (set FFMPEG=)')
+  const ext = path.extname(entry.name || '') || '.mp4'
+  const tmpVid = path.join(TMP, `vthumb-${entry.id}${ext}`)
+  const tmpJpg = path.join(TMP, `vthumb-${entry.id}.jpg`)
+  try {
+    const buf = await fetchEntryBuffer(entry)
+    fs.writeFileSync(tmpVid, buf)
+    // try 1s mark; fall back to first frame if video is shorter
+    const args = ['-y', '-ss', '1', '-i', tmpVid, '-frames:v', '1', '-q:v', '3', tmpJpg]
+    try {
+      await execFileAsync(ffmpeg, args, { timeout: 180000, maxBuffer: 10 * 1024 * 1024 })
+    } catch {
+      await execFileAsync(
+        ffmpeg,
+        ['-y', '-i', tmpVid, '-frames:v', '1', '-q:v', '3', tmpJpg],
+        { timeout: 180000, maxBuffer: 10 * 1024 * 1024 }
+      )
+    }
+    if (!fs.existsSync(tmpJpg) || fs.statSync(tmpJpg).size < 32) {
+      throw new Error('ffmpeg produced empty frame')
+    }
+    let out = fs.readFileSync(tmpJpg)
+    if (sharp) {
+      out = await sharp(out)
+        .rotate()
+        .resize(320, 320, { fit: 'cover', withoutEnlargement: false })
+        .jpeg({ quality: 72, mozjpeg: true })
+        .toBuffer()
+    }
+    return out
+  } finally {
+    try { fs.unlinkSync(tmpVid) } catch {}
+    try { fs.unlinkSync(tmpJpg) } catch {}
+  }
 }
 
 // Small JPEG preview for gallery (cached on disk)
@@ -1341,21 +1399,26 @@ app.get('/api/thumb/:id', async (req, res) => {
       res.type('image/jpeg')
       return res.sendFile(cachePath)
     }
-    if (!isImageEntry(entry)) {
-      // videos: placeholder 1x1 until real frame extract
-      return res.status(204).end()
-    }
-    if ((entry.size || 0) > 25 * 1024 * 1024) {
-      return res.status(413).json({ error: 'image too large for thumb' })
-    }
-    const buf = await fetchEntryBuffer(entry)
-    let out = buf
-    if (sharp) {
-      out = await sharp(buf)
-        .rotate()
-        .resize(320, 320, { fit: 'cover', withoutEnlargement: true })
-        .jpeg({ quality: 72, mozjpeg: true })
-        .toBuffer()
+
+    let out
+    if (isVideoEntry(entry)) {
+      if ((entry.size || 0) > 400 * 1024 * 1024) {
+        return res.status(413).json({ error: 'video too large for thumb' })
+      }
+      out = await videoFrameThumb(entry)
+    } else {
+      if ((entry.size || 0) > 25 * 1024 * 1024) {
+        return res.status(413).json({ error: 'image too large for thumb' })
+      }
+      const buf = await fetchEntryBuffer(entry)
+      out = buf
+      if (sharp) {
+        out = await sharp(buf)
+          .rotate()
+          .resize(320, 320, { fit: 'cover', withoutEnlargement: true })
+          .jpeg({ quality: 72, mozjpeg: true })
+          .toBuffer()
+      }
     }
     fs.writeFileSync(cachePath, out)
     res.setHeader('Cache-Control', 'public, max-age=604800')
@@ -1366,14 +1429,54 @@ app.get('/api/thumb/:id', async (req, res) => {
   }
 })
 
-// —— Share a single file with a friend (not the whole drive) ——
-// mode=wa: re-send file into friend's WhatsApp chat by phone number
+// —— Share file or whole folder with a friend ——
 const WA_SINGLE_LIMIT = 95 * 1024 * 1024
+const WA_FOLDER_FILE_LIMIT = 40
+
+function listFolderEntries(drive, folderPath) {
+  const folder = sanitizePath(folderPath || '')
+  if (!folder) return []
+  return Object.values(drive.files)
+    .filter(f => {
+      if (entryHidden(f) || isChunkPart(f.name)) return false
+      const fp = f.folder || ''
+      return fp === folder || fp.startsWith(folder + '/')
+    })
+    .sort((a, b) => String(a.path || '').localeCompare(String(b.path || '')))
+}
+
+function shareFileName(entry, folderRoot) {
+  const full = String(entry.path || entry.name || 'file')
+  const root = String(folderRoot || '')
+  if (root && (full === root || full.startsWith(root + '/'))) {
+    return full.slice(root.length + 1) || (full.split('/').pop() || 'file')
+  }
+  return full.includes('/') ? full.split('/').pop() : full
+}
+
+async function sendEntryToWa(jid, entry, asName) {
+  const baseName = asName || (entry.name.includes('/') ? entry.name.split('/').pop() : entry.name)
+  if (entry.chunked && Array.isArray(entry.parts) && (entry.size || 0) > WA_SINGLE_LIMIT) {
+    const parts = [...entry.parts].sort((a, b) => a.index - b.index)
+    let n = 0
+    for (const part of parts) {
+      n++
+      const buf = await downloadPartBuffer(part)
+      const pn = `${baseName}.part${String(n).padStart(3, '0')}of${String(parts.length).padStart(3, '0')}`
+      await sendWaDocument(jid, buf, pn, 'application/octet-stream')
+    }
+    return { mode: 'wa-parts', parts: parts.length, size: entry.size || 0, name: baseName }
+  }
+  const buf = await fetchEntryBuffer(entry)
+  await sendWaDocument(jid, buf, baseName, entry.mime || mimeOf(baseName))
+  noteWaTransfer('up', buf.length, 1, baseName)
+  return { mode: 'wa', size: buf.length, name: baseName }
+}
+
 app.post('/api/share', express.json({ limit: '8kb' }), async (req, res) => {
   if (!sock?.user?.id) return res.status(503).json({ error: 'WhatsApp not connected' })
   const drive = readDrive()
-  const entry = drive.files[String(req.body?.id || '')]
-  if (!entry) return res.status(404).json({ error: 'файл не знайдено' })
+  const folder = sanitizePath(req.body?.folder || '')
   const phone = normalizePhone(req.body?.phone || '')
   if (phone.length < 10 || phone.length > 15) {
     return res.status(400).json({ error: 'Номер друга: цифри з кодом країни, напр. 380XXXXXXXXX' })
@@ -1385,71 +1488,171 @@ app.post('/api/share', express.json({ limit: '8kb' }), async (req, res) => {
       return res.status(404).json({ error: 'Цього номера немає у WhatsApp' })
     }
     const jid = result.jid || (phone + '@s.whatsapp.net')
-    const baseName = entry.name.includes('/') ? entry.name.split('/').pop() : entry.name
 
-    if (note) await sock.sendMessage(jid, { text: note }).catch(() => {})
-
-    // chunked & big → send parts sequentially; small → single document
-    if (entry.chunked && Array.isArray(entry.parts) && (entry.size || 0) > WA_SINGLE_LIMIT) {
-      const parts = [...entry.parts].sort((a, b) => a.index - b.index)
-      let n = 0
-      for (const part of parts) {
-        n++
-        const buf = await downloadPartBuffer(part)
-        const pn = `${baseName}.part${String(n).padStart(3, '0')}of${String(parts.length).padStart(3, '0')}`
-        await sendWaDocument(jid, buf, pn, 'application/octet-stream')
+    if (folder) {
+      if (!drive.folders[folder]) return res.status(404).json({ error: 'папку не знайдено' })
+      const entries = listFolderEntries(drive, folder)
+      if (!entries.length) return res.status(400).json({ error: 'папка порожня' })
+      const total = entries.length
+      const batch = entries.slice(0, WA_FOLDER_FILE_LIMIT)
+      const header = [
+        `📁 Папка: /${folder}`,
+        `Файлів: ${total}` + (total > WA_FOLDER_FILE_LIMIT ? ` (надсилаю перші ${WA_FOLDER_FILE_LIMIT})` : ''),
+        note || ''
+      ].filter(Boolean).join('\n')
+      await sock.sendMessage(jid, { text: header }).catch(() => {})
+      let sent = 0
+      let failed = 0
+      for (const entry of batch) {
+        try {
+          await sendEntryToWa(jid, entry, shareFileName(entry, folder))
+          sent++
+        } catch (e) {
+          failed++
+          console.error('folder share file fail:', entry.path, e.message)
+        }
       }
-      return res.json({ ok: true, mode: 'wa-parts', jid, name: baseName, parts: parts.length })
+      return res.json({
+        ok: true,
+        mode: 'wa-folder',
+        jid,
+        folder,
+        total,
+        sent,
+        failed,
+        truncated: total > WA_FOLDER_FILE_LIMIT,
+        limit: WA_FOLDER_FILE_LIMIT
+      })
     }
 
-    const buf = await fetchEntryBuffer(entry)
-    await sendWaDocument(jid, buf, baseName, entry.mime || mimeOf(baseName))
-    noteWaTransfer('up', buf.length, 1, baseName)
-    res.json({ ok: true, mode: 'wa', jid, name: baseName, size: buf.length })
+    const entry = drive.files[String(req.body?.id || '')]
+    if (!entry) return res.status(404).json({ error: 'файл не знайдено' })
+    if (note) await sock.sendMessage(jid, { text: note }).catch(() => {})
+    const out = await sendEntryToWa(jid, entry)
+    res.json({ ok: true, jid, ...out })
   } catch (e) {
     console.error('share fail:', e.message)
     res.status(500).json({ error: e.message })
   }
 })
 
-// mode=link: short-lived public link (works on same network / LAN)
-const shareLinks = new Map() // token -> { id, exp, name }
+// mode=link: short-lived public link (file or folder)
+const shareLinks = new Map() // token -> { type, id?, folder?, exp, name }
 function cleanShareLinks() {
   const now = Date.now()
   for (const [k, v] of shareLinks) if (v.exp < now) shareLinks.delete(k)
 }
 app.post('/api/share/link', express.json({ limit: '8kb' }), (req, res) => {
   const drive = readDrive()
-  const entry = drive.files[String(req.body?.id || '')]
-  if (!entry) return res.status(404).json({ error: 'файл не знайдено' })
   cleanShareLinks()
   const ttlMin = Math.min(Math.max(parseInt(req.body?.ttlMin, 10) || 60, 1), 1440)
-  const token = crypto.randomBytes(12).toString('hex')
-  shareLinks.set(token, { id: entry.id, exp: Date.now() + ttlMin * 60_000, name: entry.name })
+  const folder = sanitizePath(req.body?.folder || '')
   const host = req.headers.host || `${HOST}:${PORT}`
+  const token = crypto.randomBytes(12).toString('hex')
+  const exp = Date.now() + ttlMin * 60_000
+
+  if (folder) {
+    if (!drive.folders[folder]) return res.status(404).json({ error: 'папку не знайдено' })
+    const files = listFolderEntries(drive, folder)
+    shareLinks.set(token, { type: 'folder', folder, exp, name: folder, count: files.length })
+    return res.json({
+      ok: true,
+      token,
+      type: 'folder',
+      folder,
+      count: files.length,
+      url: `${req.protocol}://${host}/s/${token}`,
+      path: `/s/${token}`,
+      ttlMin,
+      expiresAt: new Date(exp).toISOString(),
+      lanHint: 'Посилання працює для того, хто дістає цей сервер (та ж мережа/VPN).'
+    })
+  }
+
+  const entry = drive.files[String(req.body?.id || '')]
+  if (!entry) return res.status(404).json({ error: 'файл не знайдено' })
+  shareLinks.set(token, { type: 'file', id: entry.id, exp, name: entry.name })
   res.json({
     ok: true,
     token,
+    type: 'file',
     url: `${req.protocol}://${host}/s/${token}`,
     path: `/s/${token}`,
     ttlMin,
-    expiresAt: new Date(Date.now() + ttlMin * 60_000).toISOString(),
+    expiresAt: new Date(exp).toISOString(),
     lanHint: 'Посилання працює для того, хто дістає цей сервер (та ж мережа/VPN). Через інтернет — лише якщо порт відкритий.'
   })
 })
 
-// public download by share token — no auth token needed
+function escapeShareHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]))
+}
+
+// public download / folder listing by share token — no auth token needed
 app.get('/s/:token', async (req, res) => {
   cleanShareLinks()
   const rec = shareLinks.get(req.params.token)
   if (!rec) return res.status(404).send('Посилання недійсне або протермінувалось')
   if (!sock?.user?.id) return res.status(503).send('WhatsApp offline')
   const drive = readDrive()
+
+  if (rec.type === 'folder') {
+    const files = listFolderEntries(drive, rec.folder)
+    const rows = files.map(f => {
+      const rel = escapeShareHtml(shareFileName(f, rec.folder))
+      const href = `/s/${encodeURIComponent(req.params.token)}/f/${encodeURIComponent(f.id)}`
+      const size = Number(f.size || 0)
+      const sizeLabel = size >= 1048576
+        ? (size / 1048576).toFixed(1) + ' MB'
+        : size >= 1024 ? (size / 1024).toFixed(1) + ' KB' : size + ' B'
+      return `<a class="row" href="${href}"><span class="n">${rel}</span><span class="s">${sizeLabel}</span></a>`
+    }).join('')
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    return res.send(`<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>/${escapeShareHtml(rec.folder)}</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#0b0e14;color:#e8edf5}
+.wrap{max-width:720px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:1.15rem;margin:0 0 4px} .meta{color:#8b95a5;font-size:.85rem;margin-bottom:16px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:12px 10px;border-bottom:1px solid #1e2636;color:#9ad8f5;text-decoration:none}
+.row:hover{background:#121826}.n{word-break:break-all}.s{color:#6b7585;flex:0 0 auto;font-size:.8rem}
+</style></head><body><div class="wrap">
+<h1>📁 /${escapeShareHtml(rec.folder)}</h1>
+<p class="meta">${files.length} файлів · доступ до ${new Date(rec.exp).toLocaleString()}</p>
+${rows || '<p class="meta">Порожньо</p>'}
+</div></body></html>`)
+  }
+
   const entry = drive.files[rec.id]
   if (!entry) return res.status(404).send('файл видалено')
   try {
     const buf = await fetchEntryBuffer(entry)
     const baseName = entry.name.includes('/') ? entry.name.split('/').pop() : entry.name
+    res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(baseName)}"`)
+    res.send(buf)
+  } catch (e) {
+    res.status(500).send('помилка: ' + e.message)
+  }
+})
+
+app.get('/s/:token/f/:id', async (req, res) => {
+  cleanShareLinks()
+  const rec = shareLinks.get(req.params.token)
+  if (!rec || rec.type !== 'folder') return res.status(404).send('Посилання недійсне або протермінувалось')
+  if (!sock?.user?.id) return res.status(503).send('WhatsApp offline')
+  const drive = readDrive()
+  const entry = drive.files[String(req.params.id || '')]
+  if (!entry) return res.status(404).send('файл не знайдено')
+  const fp = entry.folder || ''
+  if (!(fp === rec.folder || fp.startsWith(rec.folder + '/'))) {
+    return res.status(403).send('файл поза цією папкою')
+  }
+  try {
+    const buf = await fetchEntryBuffer(entry)
+    const baseName = shareFileName(entry, rec.folder).split('/').pop() || entry.name
     res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(baseName)}"`)
     res.send(buf)
@@ -1469,9 +1672,11 @@ app.get('/api/download/:id', async (req, res) => {
   if (entry.chunked && Array.isArray(entry.parts) && entry.parts.length) {
     try {
       const parts = [...entry.parts].sort((a, b) => a.index - b.index)
-      res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(entry.name)}"`)
-      if (entry.size) res.setHeader('Content-Length', String(entry.size))
+      const play = String(req.query.play || '') === '1'
+      const ctype = entry.mime || (play ? 'video/mp4' : 'application/octet-stream')
+      res.setHeader('Content-Type', ctype)
+      res.setHeader('Content-Disposition', `${play ? 'inline' : 'attachment'}; filename="${encodeURIComponent(entry.name)}"`)
+      if (!play && entry.size) res.setHeader('Content-Length', String(entry.size))
       let downloaded = 0
       for (const part of parts) {
         if (!part.media || !part.remoteJid) throw new Error(`chunk ${part.index} missing media`)
@@ -1479,14 +1684,32 @@ app.get('/api/download/:id', async (req, res) => {
           key: { id: part.id, remoteJid: part.remoteJid, fromMe: part.fromMe },
           message: part.media
         }
-        const buffer = await downloadMediaMessage(
-          msg,
-          'buffer',
-          {},
-          { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
-        )
-        downloaded += buffer.length
-        res.write(buffer)
+        if (play) {
+          const stream = await downloadMediaMessage(
+            msg,
+            'stream',
+            {},
+            { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+          )
+          await new Promise((resolve, reject) => {
+            stream.on('data', (chunk) => {
+              downloaded += chunk.length || 0
+              if (!res.write(chunk)) stream.pause()
+            })
+            stream.on('end', resolve)
+            stream.on('error', reject)
+            res.on('drain', () => stream.resume())
+          })
+        } else {
+          const buffer = await downloadMediaMessage(
+            msg,
+            'buffer',
+            {},
+            { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+          )
+          downloaded += buffer.length
+          res.write(buffer)
+        }
       }
       noteWaTransfer('down', downloaded, Date.now() - t0, entry.name)
       return res.end()
@@ -1503,6 +1726,32 @@ app.get('/api/download/:id', async (req, res) => {
       key: { id: entry.id, remoteJid: entry.remoteJid, fromMe: entry.fromMe },
       message: entry.media
     }
+    const play = String(req.query.play || '') === '1' || String(req.query.ext || '') !== ''
+    const isVideo = play || String(entry.mime || '').startsWith('video/')
+    const ctype = entry.mime || (isVideo ? 'video/mp4' : 'application/octet-stream')
+
+    // Progressive stream for in-app preview — start sending as soon as WA bytes arrive
+    // (ignore Range: HTML5 video can play without seeking on first watch)
+    if (isVideo && String(req.query.play || '') === '1') {
+      res.status(200)
+      res.setHeader('Content-Type', ctype)
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(entry.name)}"`)
+      res.setHeader('Cache-Control', 'no-store')
+      const stream = await downloadMediaMessage(
+        msg,
+        'stream',
+        {},
+        { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+      )
+      let downloaded = 0
+      stream.on('data', (chunk) => { downloaded += chunk.length || 0 })
+      stream.on('end', () => noteWaTransfer('down', downloaded, Date.now() - t0, entry.name))
+      stream.on('error', (e) => {
+        try { if (!res.headersSent) res.status(500).json({ error: e.message }) } catch (_) {}
+      })
+      return stream.pipe(res)
+    }
+
     const buffer = await downloadMediaMessage(
       msg,
       'buffer',
@@ -1510,8 +1759,30 @@ app.get('/api/download/:id', async (req, res) => {
       { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
     )
     noteWaTransfer('down', buffer.length, Date.now() - t0, entry.name)
-    res.setHeader('Content-Type', entry.mime || 'application/octet-stream')
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(entry.name)}"`)
+    const isPlay = Boolean(play) || String(entry.mime || '').startsWith('video/')
+    res.setHeader('Content-Type', ctype)
+    res.setHeader('Accept-Ranges', 'bytes')
+    res.setHeader('Content-Length', String(buffer.length))
+    res.setHeader(
+      'Content-Disposition',
+      `${isPlay ? 'inline' : 'attachment'}; filename="${encodeURIComponent(entry.name)}"`
+    )
+    const range = req.headers.range
+    if (range && /^bytes=(\d*)-(\d*)$/.test(range)) {
+      const m = range.match(/^bytes=(\d*)-(\d*)$/)
+      let start = m[1] ? parseInt(m[1], 10) : 0
+      let end = m[2] ? parseInt(m[2], 10) : buffer.length - 1
+      if (Number.isNaN(start)) start = 0
+      if (Number.isNaN(end) || end >= buffer.length) end = buffer.length - 1
+      if (start > end || start >= buffer.length) {
+        res.status(416).setHeader('Content-Range', `bytes */${buffer.length}`)
+        return res.end()
+      }
+      res.status(206)
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${buffer.length}`)
+      res.setHeader('Content-Length', String(end - start + 1))
+      return res.send(buffer.subarray(start, end + 1))
+    }
     res.send(buffer)
   } catch (e) {
     res.status(500).json({ error: e.message })

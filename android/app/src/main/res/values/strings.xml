@@ -4,7 +4,11 @@
     <string name="server_hint">Адреса бота (напр. http://127.0.0.1:3000)</string>
     <string name="open_disk">Відкрити диск</string>
     <string name="open_pair">Привʼязка</string>
-    <string name="settings">Сервер</string>
-    <string name="reload">Оновити</string>
+    <string name="nav_drive">Drive</string>
+    <string name="nav_refresh">Refresh</string>
+    <string name="nav_pair">Pair</string>
+    <string name="nav_server">Server</string>
+    <string name="settings">Server</string>
+    <string name="reload">Refresh</string>
     <string name="save">Зберегти</string>
 </resources>
