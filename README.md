@@ -64,7 +64,7 @@ WhatsApp уже вміє тримати медіа. WattSapDrive додає зв
 
 1. Завантаж **[WattSapDrive-0.3.4.apk](https://github.com/xsilofon-dev/wattsapdrive/releases/latest)** з Releases.
 2. Дозволь установку з невідомих джерел.
-3. Встанови APK → відкрий → вкажи адресу бота (`http://127.0.0.1:3000` + `adb reverse`, або LAN IP).
+3. Встанови APK → відкрий → вкажи адресу бота (`http://127.0.0.1:3000` або LAN IP).
 4. На ПК/Termux має крутитись WattSapDrive.
 
 ## Встановлення на новій машині
