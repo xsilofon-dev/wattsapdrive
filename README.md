@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/Baileys-WhatsApp-25D366?style=flat-square&logo=whatsapp&logoColor=white" alt="Baileys">
   <img src="https://img.shields.io/badge/UI-localhost%3A3000-0ea5e9?style=flat-square" alt="UI">
-  <img src="https://img.shields.io/badge/version-0.3.4-25D366?style=flat-square" alt="0.3.0">
+  <img src="https://img.shields.io/badge/version-Solo%200.6.11-25D366?style=flat-square" alt="0.6.11">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT">
 </p>
 
@@ -60,14 +60,25 @@ WhatsApp уже вміє тримати медіа. WattSapDrive додає зв
 Великі чанкові файли при надсиланні у WhatsApp передаються послідовними частинами.
 
 
-## Android APK (телефон)
+## Android APK — WattSapDrive Solo (телефон, без ПК)
 
-1. Завантаж **[WattSapDrive-0.3.4.apk](https://github.com/xsilofon-dev/wattsapdrive/releases/latest)** з Releases.
+Актуальний реліз: **[Solo v0.6.11](https://github.com/xsilofon-dev/wattsapdrive/releases/tag/v0.6.11-solo)**
+
+| | |
+|---|---|
+| APK | **[WattSapDrive-Solo-0.6.11.apk](https://github.com/xsilofon-dev/wattsapdrive/releases/download/v0.6.11-solo/WattSapDrive-Solo-0.6.11.apk)** (~11.2 MB) |
+| package | `com.wattsapdrive.kotlinbot` |
+| version | **0.6.11** (versionCode 14) |
+| minSdk | 26 |
+
+1. Завантаж APK за посиланням вище (або з [Releases](https://github.com/xsilofon-dev/wattsapdrive/releases/latest)).
 2. Дозволь установку з невідомих джерел.
-3. Встанови APK → відкрий → вкажи адресу бота (`http://127.0.0.1:3000` або LAN IP).
-4. На ПК/Termux має крутитись WattSapDrive.
+3. Встанови → відкрий → привʼяжи WhatsApp кодом → обери або створи групу-сховище.
+4. Бот крутиться **на телефоні** — Node/ПК не потрібні.
 
-## Встановлення на новій машині
+> Старі APK (0.3.x / 0.5.x) — веб-клієнт до бота на ПК/Termux. Для автономного режиму став **Solo**.
+
+## Встановлення на новій машині (Node / ПК)
 
 Потрібен **Node.js 18+**.
 
